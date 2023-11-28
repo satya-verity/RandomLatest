@@ -1,0 +1,55 @@
++------------------------+       +------------------------+       +------------------------+
+|    IControlHandler     |       |   IControlHandlerManager|       |      IFormHandler      |
++------------------------+       +------------------------+       +------------------------+
+|+ AttachEventHandlers() |       |+ AttachEventHandlers() |       |+ ConstructForm()       |
+|+ ApplyElementProperties()|     |+ ApplyElementProperties()|      |+ InitializeValues()    |
+|+ SetControlValue()     |       |+ SetControlValue()      |       |+ ShowFormAsDialog()    |
+|+ GetControlValue()     |       |+ GetControlValue()      |       +------------------------+
+|+ CreateControl()       |       |+ CreateControl()        |
++------------------------+       +------------------------+
+
+          |                                 |                              |
+          |                                 |                              |
++------------------------+       +------------------------+       +------------------------+
+|ButtonControlHandler    |       |ControlHandlerManager<T>|       |      FormHandler       |
++------------------------+       +------------------------+       +------------------------+
+|                        |       |- controlHandler: ICH<T> |       |                        |
+|                        |       |+ ControlHandlerManager() |       |+ ConstructForm()       |
+|                        |<------|+ AttachEventHandlers() |       |+ InitializeValues()    |
+|                        |       |+ ApplyElementProperties()|      |+ ShowFormAsDialog()    |
+|                        |       |+ SetControlValue()      |       |+ InitializeControlValues|
+|                        |       |+ GetControlValue()      |       |+ InitializeFormProperties|
+|                        |       |+ CreateControl()        |       |+ CreateAndAddControl()  |
++------------------------+       +------------------------+       +------------------------+
+          |
++------------------------+
+|CheckBoxControlHandler  |
++------------------------+
+|                        |
+|                        |
+|                        |
++------------------------+
+
+          |
++------------------------+
+|      DynamicForm       |
++------------------------+
+|                        |
+|- form: Form             |
+|- formHandler: IFormHandler|
+|+ ShowDialog()          |
++------------------------+
+          |
+          |
+          |
+      +------------------+
+      |                   |
+      |      FormHandler  |<------|
+      +------------------+       |
+      |+ ConstructForm() |       |
+      |+ InitializeValues()    |
+      |+ ShowFormAsDialog()    |
+      |+ InitializeControlValues|
+      |+ InitializeFormProperties|
+      |+ CreateAndAddControl()  |
+      +------------------+
