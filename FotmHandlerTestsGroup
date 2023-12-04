@@ -1,0 +1,79 @@
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
+using System.Windows.Forms;
+using Connex.DynamicForms;
+using Moq;
+using Newtonsoft.Json.Linq;
+using Xunit;
+
+public class FormHandlerTests
+{
+    [Fact]
+    public void ConstructForm_WithSingleControl_ReturnsFormWithControl()
+    {
+        // Arrange
+        var formHandler = new FormHandler();
+        var formDefinition = "{\"x\": 10, \"y\": 20, \"width\": 300, \"height\": 200, \"title\": \"Test Form\", \"elements\": [{\"type\": \"TextBox\", \"name\": \"TextBox1\", \"x\": 30, \"y\": 40, \"width\": 100, \"height\": 30}]}";
+
+        // Act
+        var result = formHandler.ConstructForm(formDefinition);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Single(result.Controls);
+        Assert.IsType<TextBox>(result.Controls[0]);
+        Assert.Equal("TextBox1", result.Controls[0].Name);
+        Assert.Equal(30, result.Controls[0].Left);
+        Assert.Equal(40, result.Controls[0].Top);
+        Assert.Equal(100, result.Controls[0].Width);
+        Assert.Equal(30, result.Controls[0].Height);
+    }
+
+    [Fact]
+    public void InitializeValues_WithValidValues_SetsControlValues()
+    {
+        // Arrange
+        var formHandler = new FormHandler();
+        var form = new Form();
+        var values = new Dictionary<string, object> { { "TextBox1", "Value1" } };
+        Action<string, object, DialogAction> callback = null;
+
+        // Act
+        var result = formHandler.InitializeValues(form, values, callback);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.IsType<Form>(result);
+
+        // Assuming TextBox control exists in the form
+        var textBoxControl = form.Controls.OfType<TextBox>().FirstOrDefault();
+        Assert.NotNull(textBoxControl);
+        Assert.Equal("Value1", textBoxControl.Text);
+    }
+
+    [Fact]
+    public void CreateGroupControl_WithGroupElement_ReturnsGroupControl()
+    {
+        // Arrange
+        var formHandler = new FormHandler();
+        var groupElement = JObject.Parse("{\"type\": \"Group\", \"elements\": [{\"type\": \"TextBox\", \"name\": \"TextBox1\", \"x\": 30, \"y\": 40, \"width\": 100, \"height\": 30}]}");
+
+        // Act
+        var result = formHandler.CreateGroupControl(groupElement);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.IsType<GroupControl>(result);
+        Assert.Single(result.Controls);
+        Assert.IsType<TextBox>(result.Controls[0]);
+        Assert.Equal("TextBox1", result.Controls[0].Name);
+        Assert.Equal(30, result.Controls[0].Left);
+        Assert.Equal(40, result.Controls[0].Top);
+        Assert.Equal(100, result.Controls[0].Width);
+        Assert.Equal(30, result.Controls[0].Height);
+    }
+
+    // Add more tests for other methods as needed
+}
