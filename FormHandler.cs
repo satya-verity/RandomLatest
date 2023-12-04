@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 using ClientApi;
 using System;
 using System.Collections.Generic;
@@ -20,7 +20,7 @@ namespace Connex.DynamicForms
 
             foreach (var element in formTemplate["elements"]?.Children() ?? Enumerable.Empty<JToken>())
             {
-                CreateAndAddControl(form, element);
+                AddControl(form, element);
             }
 
             return form;
@@ -54,19 +54,37 @@ namespace Connex.DynamicForms
             form.Text = formTemplate.Value<string>("title");
         }
 
-        private void CreateAndAddControl(Form form, JToken element)
+        private void AddControl(Form form, JToken element)
+        {
+            form.Controls.Add((element["elements"] == null) ? CreateSingleControl(element): CreateGroupControl(element));
+        }
+
+        private Control CreateGroupControl(JToken element)
         {
             string elementType = element.Value<string>("type");
-            IControlHandlerManager controlHandlerManager = ControlHandlerManagerFactory.CreateControlHandlerManager(elementType);
 
-            Control formElement = controlHandlerManager?.CreateControl();
+            Control groupElement = new GroupControl();
+
+            foreach (var controlElement in element["elements"]?.Children() ?? Enumerable.Empty<JToken>())
+            {
+                groupElement?.Controls.Add(CreateSingleControl(controlElement));
+            }
+            return groupElement;
+        }
+
+        private Control CreateSingleControl(JToken element)
+        {
+            string elementType = element.Value<string>("type");
+            IControlBinder<Control> controlBinder = ControlBinderFactory.CreateControlBinder(elementType);
+
+            Control formElement = controlBinder?.CreateControl();
 
             if (formElement != null)
             {
                 InitializeControlProperties(formElement, element);
-                controlHandlerManager.ApplyElementProperties(formElement, element);
-                form.Controls.Add(formElement);
+                controlBinder.ApplyElementProperties(formElement, element);
             }
+            return formElement;
         }
 
         private void InitializeControlProperties(Control formElement, JToken element)
@@ -80,15 +98,15 @@ namespace Connex.DynamicForms
 
         private void InitializeControlValues(Control control, IDictionary<string, object> values, Action<string, object, DialogAction> callback)
         {
-            IControlHandlerManager controlHandlerManager = ControlHandlerManagerFactory.CreateControlHandlerManager(control.GetType().Name);
+            IControlBinder<Control> controlBinderManager = ControlBinderFactory.CreateControlBinder(control.GetType().Name);
 
             if (values.TryGetValue(control.Name, out var controlValue))
             {
-                controlHandlerManager?.SetControlValue(control, controlValue);
+                controlBinderManager?.SetControlValue(control, controlValue);
             }
 
             // Attach event handlers for relevant controls
-            controlHandlerManager?.AttachEventHandlers(control, values, callback);
+            controlBinderManager?.AttachEventHandlers(control, values, callback);
         }
 
     }
