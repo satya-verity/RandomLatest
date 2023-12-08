@@ -1,0 +1,448 @@
+using ClientApi;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Windows.Forms;
+
+namespace Connex.DynamicForms
+{
+    public interface IControlBinder<TControl> where TControl : Control
+    {
+        void AttachEventHandlers(TControl control, IDictionary<string, object> values, Action<string, object, DialogAction> callback);
+        void ApplyElementProperties(TControl formElement, JToken element);
+        void SetValue(TControl control, Object value);
+        Object GetValue(TControl control);
+        void SetControlValue(TControl control, int value);
+        int GetControlValue(TControl control);
+        void SetControlText(TControl control, string value);
+        string GetControlText(TControl control);
+        TControl CreateControl();
+    }
+}
+
+using ClientApi;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Windows.Forms;
+
+namespace Connex.DynamicForms
+{
+    public class ControlBinder<TControl> : IControlBinder<Control>
+                                                                where TControl : Control
+    {
+
+        private readonly IControlBinder<TControl> _controlBinder;
+      
+        public ControlBinder(IControlBinder<TControl> controlBinder)
+        {
+            this._controlBinder = controlBinder;
+        }
+
+        public void AttachEventHandlers(Control control, IDictionary<string, object> values, Action<string, object, DialogAction> callback = null)
+        {
+            try
+            {
+                if (callback == null) return;
+
+                if (control is TControl typedControl)
+                {
+                    _controlBinder.AttachEventHandlers(typedControl, values, callback);
+                }
+
+                // Attach LostFocus event handler for any control
+                control.LostFocus += (sender, e) => callback?.Invoke(control.Name, values, DialogAction.FocusChange);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex);
+                throw ex;
+            }
+        }
+
+        public void ApplyElementProperties(Control formElement, JToken element)
+        {
+            try
+            {
+                if (formElement is TControl typedControl)
+                {
+                    _controlBinder.ApplyElementProperties(typedControl, element);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex);
+                throw ex;
+            }
+        }
+
+        public void SetControlValue(Control control, int value)
+        {
+            try
+            {
+                if (control is TControl typedControl)
+                {
+                    _controlBinder.SetControlValue(typedControl, value);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex);
+                throw ex;
+            }
+        }
+
+        public int GetControlValue(Control control)
+        {
+            if (control is TControl typedControl)
+            {
+                return _controlBinder.GetControlValue(typedControl);
+            }
+            else throw new NotSupportedException($"GetControlValue not supported for {control.GetType().Name}.");
+        }
+
+        public void SetControlText(Control control, string value)
+        {
+            try
+            {
+                if (control is TControl typedControl)
+                {
+                    _controlBinder.SetControlText(typedControl, value);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex);
+                throw ex;
+            }
+        }
+
+        public string GetControlText(Control control)
+        {
+            if (control is TControl typedControl)
+            {
+                return _controlBinder.GetControlText(typedControl);
+            }
+            else throw new NotSupportedException($"GetControlValue not supported for {control.GetType().Name}.");
+        }
+
+        public void SetValue(Control control, object value)
+        {
+                try
+                {
+                    if (control is TControl typedControl)
+                    {
+                        _controlBinder.SetValue(typedControl, value);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex);
+                    throw ex;
+                }
+        }
+
+        public object GetValue(Control control)
+        {
+            return (control is TControl typedControl) ? _controlBinder.GetValue(typedControl) : null;
+        }
+
+        public Control CreateControl()
+        {
+            return _controlBinder.CreateControl();
+        }
+    }
+}
+
+using ClientApi;
+using Connex.DynamicForms;
+using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
+using System;
+using System.Windows.Forms;
+
+namespace Connex.DynamicForms
+{
+    public class GroupControl : GroupBox
+    {
+        void SetDefaultGroupProperties(GroupBox groupBox)
+        {
+            foreach (Control control in groupBox.Controls)
+            {
+                control.Margin = new Padding(0);
+            }
+        }
+    }
+}
+using Newtonsoft.Json.Linq;
+using ClientApi;
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Windows.Forms;
+using Connex.DynamicForms;
+using System.Linq;
+using System.Diagnostics;
+
+namespace Connex.DynamicForms
+{
+    public class FormHandler : IFormHandler
+    {
+        private readonly List<string> validGroupControls = new List<string>() { "ButtonGroup", "RadioButtonGroup" };
+
+
+        public Form ConstructForm(string formDefinition)
+        {
+            Form form = new Form();
+            try
+            {
+                JObject formTemplate = JObject.Parse(formDefinition);
+
+                InitializeFormProperties(form, formTemplate);
+
+                foreach (var element in formTemplate["elements"]?.Children() ?? Enumerable.Empty<JToken>())
+                {
+                    AddControl(form, element);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex);
+                throw ex;
+            }
+            return form;
+        }
+
+        public Form InitializeValues(Form form, IDictionary<string, object> values, Action<string, object, DialogAction> callback)
+        {
+            if (form == null) return null;
+            try
+            {
+                foreach (Control control in form.Controls)
+                {
+                    InitializeControlValues(control, values, callback);
+                }
+
+                callback?.Invoke(form.Name, values, DialogAction.Initialize);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex);
+                throw ex;
+            }
+            return form;
+        }
+
+        public DialogResult ShowFormAsDialog(Form form)
+        {
+            return form.ShowDialog();
+        }
+
+        private void InitializeFormProperties(Form form, JObject formTemplate)
+        {
+            form.Left = formTemplate.Value<int>("x");
+            form.Top = formTemplate.Value<int>("y");
+            form.Width = formTemplate.Value<int>("width");
+            form.Height = formTemplate.Value<int>("height");
+            form.Text = formTemplate.Value<string>("title");
+        }
+
+        private void AddControl(Form form, JToken element)
+        {
+            string elementType = element.Value<string>("type");
+            if(string.IsNullOrEmpty(elementType))
+            {
+                var error = $"Property 'type' missing for {element}";
+                Debug.WriteLine(error);
+                throw new Exception(error);
+            };
+            form.Controls.Add(this.validGroupControls.Contains(elementType) ? CreateGroupControl(element) : CreateSingleControl(element));
+        }
+
+        private Control CreateGroupControl(JToken element)
+        {
+            Control groupElement = new GroupControl
+            {
+                Name = element.Value<string>("name")
+            };
+
+            foreach (var controlElement in element["elements"]?.Children() ?? Enumerable.Empty<JToken>())
+            {
+                groupElement?.Controls.Add(CreateSingleControl(controlElement));
+            }
+            return groupElement;
+        }
+
+        private Control CreateSingleControl(JToken element)
+        {
+            string elementType = element.Value<string>("type");
+            IControlBinder<Control> controlBinder = ControlBinderFactory.CreateControlBinder(elementType);
+
+            Control formElement = controlBinder?.CreateControl();
+
+            if (formElement != null)
+            {
+                InitializeControlProperties(formElement, element);
+                controlBinder.ApplyElementProperties(formElement, element);
+            }
+            return formElement;
+        }
+
+        private void InitializeControlProperties(Control formElement, JToken element)
+        {
+            formElement.Left = element.Value<int>("x");
+            formElement.Top = element.Value<int>("y");
+            formElement.Width = element.Value<int>("width");
+            formElement.Height = element.Value<int>("height");
+            formElement.Name = element.Value<string>("name");
+        }
+
+        private void InitializeControlValues(Control control, IDictionary<string, object> values, Action<string, object, DialogAction> callback)
+        {
+            IControlBinder<Control> controlBinderManager = ControlBinderFactory.CreateControlBinder(control.GetType().Name);
+
+            if (values.TryGetValue(control.Name, out var controlValue))
+            {
+                controlBinderManager?.SetControlValue(control, controlValue);
+            }
+
+            // Attach event handlers for relevant controls
+            controlBinderManager?.AttachEventHandlers(control, values, callback);
+        }
+
+    }
+
+}
+
+using ClientApi;
+using Connex.DynamicForms;
+using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
+using System;
+using System.Windows.Forms;
+
+namespace Connex.DynamicForms
+{
+    public class ButtonControlBinder : IControlBinder<Button>
+    {
+        public void AttachEventHandlers(Button control, IDictionary<string, object> values, Action<string, object, DialogAction> callback)
+        {
+            control.Click += (sender, e) => callback?.Invoke(control.Name, values, DialogAction.ControlChange);
+        }
+
+        public void ApplyElementProperties(Button formElement, JToken element)
+        {
+            formElement.Text = element.Value<string>("text");
+        }
+
+        public void SetControlValue(Button control, int value)
+        {
+            throw new NotSupportedException("Button does not support SetControlValue");
+        }
+
+        public int GetControlValue(Button control)
+        {
+            throw new NotSupportedException("Button does not support GetControlValue");
+        }
+
+        public void SetControlText(Button control, string value)
+        {
+            control.Text = value;
+        }
+
+        public string GetControlText(Button control)
+        {
+            return control.Text;
+        }
+
+        public void SetValue(Button control, object value)
+        {
+            this.SetControlText(control, value.ToString());
+        }
+
+        public object GetValue(Button control)
+        {
+            return this.GetControlText(control);
+        }
+
+        public Button CreateControl()
+        {
+            return new Button();
+        }
+    }
+}
+using ClientApi;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace Connex.DynamicForms
+{
+    public class CheckBoxControlBinder : IControlBinder<CheckBox>
+    {
+        public void AttachEventHandlers(CheckBox control, IDictionary<string, object> values, Action<string, object, DialogAction> callback)
+        {
+            control.CheckedChanged += (sender, e) => callback?.Invoke(control.Name, values, DialogAction.ControlChange);
+        }
+
+        public void ApplyElementProperties(CheckBox formElement, JToken element)
+        {
+            formElement.Text = element.Value<string>("text");
+            formElement.Checked = element.Value<bool>("value");
+        }
+
+        public void SetControlValue(CheckBox control, int value)
+        {
+            switch (value)
+            {
+                case -1:
+                    control.Enabled = false;
+                    break;
+                case 0:
+                    control.Checked = false;
+                    break;
+                case 1:
+                    control.Checked = true;
+                    break;
+            }
+        }
+
+        public int GetControlValue(CheckBox control)
+        {
+            var value = 0;
+            if (control.Checked == true) value = 1;
+            if (control.Enabled == false) value = -1;
+            return value;
+        }
+
+        public void SetControlText(CheckBox control, string value)
+        {
+            control.Text = value;
+        }
+
+        public string GetControlText(CheckBox control)
+        {
+            return control.Text;
+        }
+
+        public void SetValue(CheckBox control, object value)
+        {
+            this.SetControlValue(control, (int)value);
+        }
+
+        public object GetValue(CheckBox control)
+        {
+            return this.GetControlValue(control);
+        }
+
+        public CheckBox CreateControl()
+        {
+            return new CheckBox();
+        }
+    }
+}
