@@ -1,0 +1,903 @@
+using System;
+using System.Collections.Generic;
+using System.Windows.Forms;
+using Connex.DynamicForms;
+using Connex.DynamicForms.Controls;
+using Moq;
+using Xunit;
+
+namespace Connex.DynamicForms.Tests
+{
+    public class DynamicFormTests
+    {
+        [Fact]
+        public void ShowDialog_ConstructsAndShowsForm()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var formDefinition = "MockFormDefinition";
+            var formData = new Dictionary<string, object>();
+            Action<string, object, DialogAction> callback = (name, value, action) => { /* Callback logic */ };
+
+            // Act
+            dynamicForm.ShowDialog(formDefinition, formData, callback);
+
+            // Assert
+            formHandlerMock.Verify(fh => fh.ConstructForm(formDefinition), Times.Once);
+            formHandlerMock.Verify(fh => fh.InitializeValues(It.IsAny<Form>(), formData, callback), Times.Once);
+            formHandlerMock.Verify(fh => fh.ShowFormAsDialog(It.IsAny<Form>()), Times.Once);
+        }
+
+        [Fact]
+        public void DlgEnable_EnablesControl()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "MockControl";
+            var mockControl = new Mock<Control>();
+            formHandlerMock.Setup(fh => fh.FindControl(It.IsAny<Form>(), controlName)).Returns(mockControl.Object);
+
+            // Act
+            dynamicForm.DlgEnable(controlName, true);
+
+            // Assert
+            mockControl.VerifySet(c => c.Enabled = true, Times.Once);
+        }
+
+        [Fact]
+        public void DlgEnable_DisablesControl()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "MockControl";
+            var mockControl = new Mock<Control>();
+            formHandlerMock.Setup(fh => fh.FindControl(It.IsAny<Form>(), controlName)).Returns(mockControl.Object);
+
+            // Act
+            dynamicForm.DlgEnable(controlName, false);
+
+            // Assert
+            mockControl.VerifySet(c => c.Enabled = false, Times.Once);
+        }
+
+        // Add more tests for other methods such as DlgFocus, DlgListBoxArray, DlgText, DlgValue, DlgVisible, SetDlgFocus, SetDlgVisible, etc.
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Windows.Forms;
+using Connex.DynamicForms;
+using Connex.DynamicForms.Controls;
+using Moq;
+using Xunit;
+
+namespace Connex.DynamicForms.Tests
+{
+    public class DynamicFormTests
+    {
+        [Fact]
+        public void DlgFocus_SetsFocusOnControl()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "MockControl";
+            var mockControl = new Mock<Control>();
+            formHandlerMock.Setup(fh => fh.FindControl(It.IsAny<Form>(), controlName)).Returns(mockControl.Object);
+
+            // Act
+            dynamicForm.DlgFocus(controlName);
+
+            // Assert
+            mockControl.Verify(c => c.Focus(), Times.Once);
+        }
+
+        [Fact]
+        public void DlgListBoxArray_SetsListBoxArray()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "MockListBox";
+            var mockListBox = new Mock<ListBox>();
+            formHandlerMock.Setup(fh => fh.FindControl(It.IsAny<Form>(), controlName)).Returns(mockListBox.Object);
+
+            // Act
+            var entries = new List<string> { "Item1", "Item2", "Item3" };
+            dynamicForm.DlgListBoxArray(controlName, entries);
+
+            // Assert
+            var listControlBinderMock = Mock.Get(ControlBinderFactory.CreateControlBinder("ListBox"));
+            listControlBinderMock.As<IListControl>().Verify(l => l.SetListBoxArray(mockListBox.Object, entries), Times.Once);
+        }
+
+        [Fact]
+        public void DlgText_SetsControlText()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "MockTextBox";
+            var mockTextBox = new Mock<TextBox>();
+            formHandlerMock.Setup(fh => fh.FindControl(It.IsAny<Form>(), controlName)).Returns(mockTextBox.Object);
+
+            // Act
+            dynamicForm.DlgText(controlName, "NewText");
+
+            // Assert
+            var controlBinderMock = Mock.Get(ControlBinderFactory.CreateControlBinder("TextBox"));
+            controlBinderMock.Verify(c => c.SetControlText(mockTextBox.Object, "NewText"), Times.Once);
+        }
+
+        [Fact]
+        public void DlgValue_SetsControlValueFromInt()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "MockNumericUpDown";
+            var mockNumericUpDown = new Mock<NumericUpDown>();
+            formHandlerMock.Setup(fh => fh.FindControl(It.IsAny<Form>(), controlName)).Returns(mockNumericUpDown.Object);
+
+            // Act
+            dynamicForm.DlgValue(controlName, 42);
+
+            // Assert
+            var controlBinderMock = Mock.Get(ControlBinderFactory.CreateControlBinder("NumericUpDown"));
+            controlBinderMock.Verify(c => c.SetControlValueFromInt(mockNumericUpDown.Object, 42), Times.Once);
+        }
+
+        [Fact]
+        public void DlgVisible_SetsControlVisibility()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "MockControl";
+            var mockControl = new Mock<Control>();
+            formHandlerMock.Setup(fh => fh.FindControl(It.IsAny<Form>(), controlName)).Returns(mockControl.Object);
+
+            // Act
+            dynamicForm.DlgVisible(controlName, true);
+
+            // Assert
+            mockControl.VerifySet(c => c.Visible = true, Times.Once);
+        }
+
+        [Fact]
+        public void SetDlgFocus_SetsFocusOnControl()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "MockControl";
+            var mockControl = new Mock<Control>();
+            formHandlerMock.Setup(fh => fh.FindControl(It.IsAny<Form>(), controlName)).Returns(mockControl.Object);
+
+            // Act
+            dynamicForm.SetDlgFocus(controlName);
+
+            // Assert
+            mockControl.Verify(c => c.Focus(), Times.Once);
+        }
+
+        [Fact]
+        public void SetDlgVisible_SetsControlVisibility()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "MockControl";
+            var mockControl = new Mock<Control>();
+            formHandlerMock.Setup(fh => fh.FindControl(It.IsAny<Form>(), controlName)).Returns(mockControl.Object);
+
+            // Act
+            dynamicForm.SetDlgVisible(controlName, false);
+
+            // Assert
+            mockControl.VerifySet(c => c.Visible = false, Times.Once);
+        }
+
+        [Fact]
+        public void FindControl_ControlNotFound_ReturnsNull()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "NonExistentControl";
+
+            // Act
+            var result = dynamicForm.FindControl(controlName);
+
+            // Assert
+            Assert.Null(result);
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Windows.Forms;
+using Connex.DynamicForms;
+using Connex.DynamicForms.Controls;
+using Moq;
+using Xunit;
+
+namespace Connex.DynamicForms.Tests
+{
+    public class DynamicFormTests
+    {
+        [Fact]
+        public void DlgEnd_ThrowsNotImplementedException()
+        {
+            // Arrange
+            var dynamicForm = new DynamicForm();
+
+            // Act & Assert
+            Assert.Throws<NotImplementedException>(() => dynamicForm.DlgEnd(0));
+        }
+
+        [Fact]
+        public void DlgFocus_ControlNotFound_ReturnsFalse()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "NonExistentControl";
+
+            // Act
+            var result = dynamicForm.DlgFocus(controlName);
+
+            // Assert
+            Assert.False(result);
+        }
+
+        [Fact]
+        public void DlgVisible_ControlNotFound_ReturnsFalse()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "NonExistentControl";
+
+            // Act
+            var result = dynamicForm.DlgVisible(controlName);
+
+            // Assert
+            Assert.False(result);
+        }
+
+        [Fact]
+        public void DlgValue_ControlNotFound_ReturnsNegativeOne()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "NonExistentControl";
+
+            // Act
+            var result = dynamicForm.DlgValue(controlName);
+
+            // Assert
+            Assert.Equal(-1, result);
+        }
+
+        [Fact]
+        public void DlgListBoxArray_ControlNotFound_DoesNotThrowException()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "NonExistentControl";
+
+            // Act & Assert (should not throw an exception)
+            Assert.Null(Record.Exception(() => dynamicForm.DlgListBoxArray(controlName, new List<string>())));
+        }
+
+        [Fact]
+        public void DlgText_ControlNotFound_DoesNotThrowException()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "NonExistentControl";
+
+            // Act & Assert (should not throw an exception)
+            Assert.Null(Record.Exception(() => dynamicForm.DlgText(controlName, "NewText")));
+        }
+
+        [Fact]
+        public void DlgValue_ControlNotNumeric_DoesNotThrowException()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "NonNumericControl";
+
+            // Act & Assert (should not throw an exception)
+            Assert.Null(Record.Exception(() => dynamicForm.DlgValue(controlName, 42)));
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Windows.Forms;
+using Connex.DynamicForms;
+using Connex.DynamicForms.Controls;
+using Moq;
+using Xunit;
+
+namespace Connex.DynamicForms.Tests
+{
+    public class DynamicFormTests
+    {
+        // ... Existing tests
+
+        [Fact]
+        public void DlgEnd_ThrowsNotImplementedException()
+        {
+            // Arrange
+            var dynamicForm = new DynamicForm();
+
+            // Act & Assert
+            Assert.Throws<NotImplementedException>(() => dynamicForm.DlgEnd(0));
+        }
+
+        [Fact]
+        public void DlgFocus_ControlFound_ReturnsTrue()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "MockControl";
+            var mockControl = new Mock<Control>();
+            formHandlerMock.Setup(fh => fh.FindControl(It.IsAny<Form>(), controlName)).Returns(mockControl.Object);
+
+            // Act
+            var result = dynamicForm.DlgFocus(controlName);
+
+            // Assert
+            Assert.True(result);
+        }
+
+        [Fact]
+        public void DlgVisible_ControlFound_ReturnsTrue()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "MockControl";
+            var mockControl = new Mock<Control>();
+            formHandlerMock.Setup(fh => fh.FindControl(It.IsAny<Form>(), controlName)).Returns(mockControl.Object);
+
+            // Act
+            var result = dynamicForm.DlgVisible(controlName);
+
+            // Assert
+            Assert.True(result);
+        }
+
+        [Fact]
+        public void DlgValue_ControlFound_ReturnsControlValue()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "MockNumericUpDown";
+            var mockNumericUpDown = new Mock<NumericUpDown>();
+            formHandlerMock.Setup(fh => fh.FindControl(It.IsAny<Form>(), controlName)).Returns(mockNumericUpDown.Object);
+            var controlBinderMock = Mock.Get(ControlBinderFactory.CreateControlBinder("NumericUpDown"));
+            controlBinderMock.As<IControlBinder<NumericUpDown>>().Setup(c => c.GetControlValueAsInt(mockNumericUpDown.Object)).Returns(42);
+
+            // Act
+            var result = dynamicForm.DlgValue(controlName);
+
+            // Assert
+            Assert.Equal(42, result);
+        }
+
+        [Fact]
+        public void DlgValue_ControlNotNumeric_ReturnsNegativeOne()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "MockTextBox";
+            var mockTextBox = new Mock<TextBox>();
+            formHandlerMock.Setup(fh => fh.FindControl(It.IsAny<Form>(), controlName)).Returns(mockTextBox.Object);
+
+            // Act
+            var result = dynamicForm.DlgValue(controlName);
+
+            // Assert
+            Assert.Equal(-1, result);
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Windows.Forms;
+using Connex.DynamicForms;
+using Connex.DynamicForms.Controls;
+using Moq;
+using Xunit;
+
+namespace Connex.DynamicForms.Tests
+{
+    public class DynamicFormTests
+    {
+        // ... Existing tests
+
+        [Fact]
+        public void DlgEnd_ThrowsNotImplementedException()
+        {
+            // Arrange
+            var dynamicForm = new DynamicForm();
+
+            // Act & Assert
+            Assert.Throws<NotImplementedException>(() => dynamicForm.DlgEnd(0));
+        }
+
+        [Fact]
+        public void DlgFocus_ControlFound_ReturnsTrue()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "MockControl";
+            var mockControl = new Mock<Control>();
+            formHandlerMock.Setup(fh => fh.FindControl(It.IsAny<Form>(), controlName)).Returns(mockControl.Object);
+
+            // Act
+            var result = dynamicForm.DlgFocus(controlName);
+
+            // Assert
+            Assert.True(result);
+        }
+
+        [Fact]
+        public void DlgVisible_ControlFound_ReturnsTrue()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "MockControl";
+            var mockControl = new Mock<Control>();
+            formHandlerMock.Setup(fh => fh.FindControl(It.IsAny<Form>(), controlName)).Returns(mockControl.Object);
+
+            // Act
+            var result = dynamicForm.DlgVisible(controlName);
+
+            // Assert
+            Assert.True(result);
+        }
+
+        [Fact]
+        public void DlgValue_ControlFound_ReturnsControlValue()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "MockNumericUpDown";
+            var mockNumericUpDown = new Mock<NumericUpDown>();
+            formHandlerMock.Setup(fh => fh.FindControl(It.IsAny<Form>(), controlName)).Returns(mockNumericUpDown.Object);
+            var controlBinderMock = Mock.Get(ControlBinderFactory.CreateControlBinder("NumericUpDown"));
+            controlBinderMock.As<IControlBinder<NumericUpDown>>().Setup(c => c.GetControlValueAsInt(mockNumericUpDown.Object)).Returns(42);
+
+            // Act
+            var result = dynamicForm.DlgValue(controlName);
+
+            // Assert
+            Assert.Equal(42, result);
+        }
+
+        [Fact]
+        public void DlgValue_ControlNotNumeric_ReturnsNegativeOne()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "MockTextBox";
+            var mockTextBox = new Mock<TextBox>();
+            formHandlerMock.Setup(fh => fh.FindControl(It.IsAny<Form>(), controlName)).Returns(mockTextBox.Object);
+
+            // Act
+            var result = dynamicForm.DlgValue(controlName);
+
+            // Assert
+            Assert.Equal(-1, result);
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Windows.Forms;
+using Connex.DynamicForms;
+using Connex.DynamicForms.Controls;
+using Moq;
+using Xunit;
+
+namespace Connex.DynamicForms.Tests
+{
+    public class DynamicFormTests
+    {
+        // ... Existing tests
+
+        [Fact]
+        public void DlgListBoxArray_ControlFound_SetsListBoxArray()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "MockListBox";
+            var mockListBox = new Mock<ListBox>();
+            formHandlerMock.Setup(fh => fh.FindControl(It.IsAny<Form>(), controlName)).Returns(mockListBox.Object);
+
+            // Act
+            var entries = new List<string> { "Item1", "Item2", "Item3" };
+            dynamicForm.DlgListBoxArray(controlName, entries);
+
+            // Assert
+            var listControlBinderMock = Mock.Get(ControlBinderFactory.CreateControlBinder("ListBox"));
+            listControlBinderMock.As<IListControl>().Verify(l => l.SetListBoxArray(mockListBox.Object, entries), Times.Once);
+        }
+
+        [Fact]
+        public void DlgListBoxArray_ControlNotFound_DoesNotThrowException()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "NonExistentControl";
+
+            // Act & Assert (should not throw an exception)
+            Assert.Null(Record.Exception(() => dynamicForm.DlgListBoxArray(controlName, new List<string>())));
+        }
+
+        [Fact]
+        public void DlgText_ControlFound_SetsControlText()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "MockTextBox";
+            var mockTextBox = new Mock<TextBox>();
+            formHandlerMock.Setup(fh => fh.FindControl(It.IsAny<Form>(), controlName)).Returns(mockTextBox.Object);
+
+            // Act
+            dynamicForm.DlgText(controlName, "NewText");
+
+            // Assert
+            var controlBinderMock = Mock.Get(ControlBinderFactory.CreateControlBinder("TextBox"));
+            controlBinderMock.Verify(c => c.SetControlText(mockTextBox.Object, "NewText"), Times.Once);
+        }
+
+        [Fact]
+        public void DlgText_ControlNotFound_DoesNotThrowException()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "NonExistentControl";
+
+            // Act & Assert (should not throw an exception)
+            Assert.Null(Record.Exception(() => dynamicForm.DlgText(controlName, "NewText")));
+        }
+
+        [Fact]
+        public void DlgVisible_ControlFound_SetsControlVisibility()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "MockControl";
+            var mockControl = new Mock<Control>();
+            formHandlerMock.Setup(fh => fh.FindControl(It.IsAny<Form>(), controlName)).Returns(mockControl.Object);
+
+            // Act
+            dynamicForm.DlgVisible(controlName, true);
+
+            // Assert
+            mockControl.VerifySet(c => c.Visible = true, Times.Once);
+        }
+
+        [Fact]
+        public void DlgVisible_ControlNotFound_DoesNotThrowException()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "NonExistentControl";
+
+            // Act & Assert (should not throw an exception)
+            Assert.Null(Record.Exception(() => dynamicForm.DlgVisible(controlName, true)));
+        }
+
+        [Fact]
+        public void SetDlgFocus_ControlFound_SetsFocusOnControl()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "MockControl";
+            var mockControl = new Mock<Control>();
+            formHandlerMock.Setup(fh => fh.FindControl(It.IsAny<Form>(), controlName)).Returns(mockControl.Object);
+
+            // Act
+            dynamicForm.SetDlgFocus(controlName);
+
+            // Assert
+            mockControl.Verify(c => c.Focus(), Times.Once);
+        }
+
+        [Fact]
+        public void SetDlgFocus_ControlNotFound_DoesNotThrowException()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "NonExistentControl";
+
+            // Act & Assert (should not throw an exception)
+            Assert.Null(Record.Exception(() => dynamicForm.SetDlgFocus(controlName)));
+        }
+
+        [Fact]
+        public void SetDlgVisible_ControlFound_SetsControlVisibility()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "MockControl";
+            var mockControl = new Mock<Control>();
+            formHandlerMock.Setup(fh => fh.FindControl(It.IsAny<Form>(), controlName)).Returns(mockControl.Object);
+
+            // Act
+            dynamicForm.SetDlgVisible(controlName, false);
+
+            // Assert
+            mockControl.VerifySet(c => c.Visible = false, Times.Once);
+        }
+
+        [Fact]
+        public void SetDlgVisible_ControlNotFound_DoesNotThrowException()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "NonExistentControl";
+
+            // Act & Assert (should not throw an exception)
+            Assert.Null(Record.Exception(() => dynamicForm.SetDlgVisible(controlName, false)));
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Windows.Forms;
+using Connex.DynamicForms;
+using Connex.DynamicForms.Controls;
+using Moq;
+using Xunit;
+
+namespace Connex.DynamicForms.Tests
+{
+    public class DynamicFormTests
+    {
+        // ... Existing tests
+
+        [Fact]
+        public void DlgListBoxArray_ControlFound_ReturnsListBoxArray()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "MockListBox";
+            var mockListBox = new Mock<ListBox>();
+            formHandlerMock.Setup(fh => fh.FindControl(It.IsAny<Form>(), controlName)).Returns(mockListBox.Object);
+            var listControlBinderMock = Mock.Get(ControlBinderFactory.CreateControlBinder("ListBox"));
+            listControlBinderMock.As<IListControl>().Setup(l => l.GetListBoxArray(mockListBox.Object)).Returns(new List<string> { "Item1", "Item2" });
+
+            // Act
+            var result = dynamicForm.DlgListBoxArray(controlName);
+
+            // Assert
+            Assert.Equal(new List<string> { "Item1", "Item2" }, result);
+        }
+
+        [Fact]
+        public void DlgListBoxArray_ControlNotListBox_ReturnsNull()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "MockTextBox";
+            var mockTextBox = new Mock<TextBox>();
+            formHandlerMock.Setup(fh => fh.FindControl(It.IsAny<Form>(), controlName)).Returns(mockTextBox.Object);
+
+            // Act
+            var result = dynamicForm.DlgListBoxArray(controlName);
+
+            // Assert
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void DlgListBoxArray_ControlNotFound_ReturnsNull()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "NonExistentControl";
+
+            // Act
+            var result = dynamicForm.DlgListBoxArray(controlName);
+
+            // Assert
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void DlgText_ControlFound_ReturnsControlText()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "MockTextBox";
+            var mockTextBox = new Mock<TextBox>();
+            formHandlerMock.Setup(fh => fh.FindControl(It.IsAny<Form>(), controlName)).Returns(mockTextBox.Object);
+            var controlBinderMock = Mock.Get(ControlBinderFactory.CreateControlBinder("TextBox"));
+            controlBinderMock.Setup(c => c.GetControlText(mockTextBox.Object)).Returns("ExistingText");
+
+            // Act
+            var result = dynamicForm.DlgText(controlName);
+
+            // Assert
+            Assert.Equal("ExistingText", result);
+        }
+
+        [Fact]
+        public void DlgText_ControlNotFound_ReturnsNull()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "NonExistentControl";
+
+            // Act
+            var result = dynamicForm.DlgText(controlName);
+
+            // Assert
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void DlgValue_ControlFound_ReturnsControlValue()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "MockNumericUpDown";
+            var mockNumericUpDown = new Mock<NumericUpDown>();
+            formHandlerMock.Setup(fh => fh.FindControl(It.IsAny<Form>(), controlName)).Returns(mockNumericUpDown.Object);
+            var controlBinderMock = Mock.Get(ControlBinderFactory.CreateControlBinder("NumericUpDown"));
+            controlBinderMock.As<IControlBinder<NumericUpDown>>().Setup(c => c.GetControlValueAsInt(mockNumericUpDown.Object)).Returns(42);
+
+            // Act
+            var result = dynamicForm.DlgValue(controlName);
+
+            // Assert
+            Assert.Equal(42, result);
+        }
+
+        [Fact]
+        public void DlgValue_ControlNotNumeric_ReturnsNegativeOne()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "MockTextBox";
+            var mockTextBox = new Mock<TextBox>();
+            formHandlerMock.Setup(fh => fh.FindControl(It.IsAny<Form>(), controlName)).Returns(mockTextBox.Object);
+
+            // Act
+            var result = dynamicForm.DlgValue(controlName);
+
+            // Assert
+            Assert.Equal(-1, result);
+        }
+
+        [Fact]
+        public void DlgVisible_ControlFound_ReturnsControlVisibility()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "MockControl";
+            var mockControl = new Mock<Control>();
+            formHandlerMock.Setup(fh => fh.FindControl(It.IsAny<Form>(), controlName)).Returns(mockControl.Object);
+            mockControl.SetupGet(c => c.Visible).Returns(true);
+
+            // Act
+            var result = dynamicForm.DlgVisible(controlName);
+
+            // Assert
+            Assert.True(result);
+        }
+
+        [Fact]
+        public void DlgVisible_ControlNotFound_ReturnsFalse()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "NonExistentControl";
+
+            // Act
+            var result = dynamicForm.DlgVisible(controlName);
+
+            // Assert
+            Assert.False(result);
+        }
+
+        [Fact]
+        public void SetDlgFocus_ControlFound_SetsFocusOnControl()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "MockControl";
+            var mockControl = new Mock<Control>();
+            formHandlerMock.Setup(fh => fh.FindControl(It.IsAny<Form>(), controlName)).Returns(mockControl.Object);
+
+            // Act
+            dynamicForm.SetDlgFocus(controlName);
+
+            // Assert
+            mockControl.Verify(c => c.Focus(), Times.Once);
+        }
+
+        [Fact]
+        public void SetDlgFocus_ControlNotFound_DoesNotThrowException()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "NonExistentControl";
+
+            // Act & Assert (should not throw an exception)
+            Assert.Null(Record.Exception(() => dynamicForm.SetDlgFocus(controlName)));
+        }
+
+        [Fact]
+        public void SetDlgVisible_ControlFound_SetsControlVisibility()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "MockControl";
+            var mockControl = new Mock<Control>();
+            formHandlerMock.Setup(fh => fh.FindControl(It.IsAny<Form>(), controlName)).Returns(mockControl.Object);
+
+            // Act
+            dynamicForm.SetDlgVisible(controlName, false);
+
+            // Assert
+            mockControl.VerifySet(c => c.Visible = false, Times.Once);
+        }
+
+        [Fact]
+        public void SetDlgVisible_ControlNotFound_DoesNotThrowException()
+        {
+            // Arrange
+            var formHandlerMock = new Mock<IFormHandler>();
+            var dynamicForm = new DynamicForm(formHandlerMock.Object);
+            var controlName = "NonExistentControl";
+
+            // Act & Assert (should not throw an exception)
+            Assert.Null(Record.Exception(() => dynamicForm.SetDlgVisible(controlName, false)));
+        }
+    }
+}
