@@ -1,0 +1,67 @@
+using ClientApi;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace Connex.DynamicForms.Controls
+{
+    public abstract class BaseControlBinder<TControl> : IControlBinder<TControl> where TControl : Control
+    {
+        public virtual void InitializeControlProperties(Control formElement, JToken element)
+        {
+            formElement.Left = element.Value<int>("x");
+            formElement.Top = element.Value<int>("y");
+            formElement.Width = element.Value<int>("width");
+            formElement.Height = element.Value<int>("height");
+            formElement.Name = element.Value<string>("name");
+        }
+
+        public virtual void ApplyElementProperties(TControl formElement, JToken element)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual void AttachEventHandlers(TControl control, IDictionary<string, object> values, Action<string, object, DialogAction> callback)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual TControl CreateControl()
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual string GetControlText(TControl control)
+        {
+            return control.Text;
+        }
+        public virtual void SetControlText(TControl control, string value)
+        {
+            control.Text = value;
+        }
+
+        public virtual int GetControlValue(TControl control)
+        {
+            throw new NotSupportedException("GetControlValue is not supported.");
+        }
+
+        public virtual void SetControlValue(TControl control, int value)
+        {
+            throw new NotSupportedException("SetControlValue is not supported.");
+        }
+
+        public virtual object GetValue(TControl control)
+        {
+            return this.GetControlText(control);
+        }     
+
+        public virtual void SetValue(TControl control, object value)
+        {
+            this.SetControlText(control, value.ToString());
+        }
+    }
+}
