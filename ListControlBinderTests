@@ -1,0 +1,329 @@
+using System;
+using System.Collections.Generic;
+using System.Windows.Forms;
+using Connex.DynamicForms.Controls;
+using Newtonsoft.Json.Linq;
+using Xunit;
+
+namespace Connex.DynamicForms.Tests
+{
+    public class ListBoxControlBinderTests
+    {
+        [Fact]
+        public void SetControlValueFromInt_ValueInList_SetsSelectedIndex()
+        {
+            // Arrange
+            var listBoxControlBinder = new ListBoxControlBinder();
+            var listBox = new ListBox();
+            listBox.Items.AddRange(new object[] { "Item1", "Item2", "Item3" });
+
+            // Act
+            listBoxControlBinder.SetControlValueFromInt(listBox, 1);
+
+            // Assert
+            Assert.Equal(1, listBox.SelectedIndex);
+        }
+
+        [Fact]
+        public void SetControlValueFromInt_ValueNotInList_DoesNotChangeSelectedIndex()
+        {
+            // Arrange
+            var listBoxControlBinder = new ListBoxControlBinder();
+            var listBox = new ListBox();
+            listBox.Items.AddRange(new object[] { "Item1", "Item2", "Item3" });
+
+            // Act
+            listBoxControlBinder.SetControlValueFromInt(listBox, 5);
+
+            // Assert
+            Assert.Equal(-1, listBox.SelectedIndex);
+        }
+
+        [Fact]
+        public void GetControlValueAsInt_SelectedIndex_ReturnsCorrectValue()
+        {
+            // Arrange
+            var listBoxControlBinder = new ListBoxControlBinder();
+            var listBox = new ListBox();
+            listBox.Items.AddRange(new object[] { "Item1", "Item2", "Item3" });
+            listBox.SelectedIndex = 2;
+
+            // Act
+            var result = listBoxControlBinder.GetControlValueAsInt(listBox);
+
+            // Assert
+            Assert.Equal(2, result);
+        }
+
+        [Fact]
+        public void GetControlValueAsInt_NoItemSelected_ReturnsNegativeOne()
+        {
+            // Arrange
+            var listBoxControlBinder = new ListBoxControlBinder();
+            var listBox = new ListBox();
+
+            // Act
+            var result = listBoxControlBinder.GetControlValueAsInt(listBox);
+
+            // Assert
+            Assert.Equal(-1, result);
+        }
+
+        [Fact]
+        public void SetListBoxArray_ClearsAndAddsEntries()
+        {
+            // Arrange
+            var listBoxControlBinder = new ListBoxControlBinder();
+            var listBox = new ListBox();
+            listBox.Items.AddRange(new object[] { "Item1", "Item2", "Item3" });
+            var entries = new List<string> { "New1", "New2" };
+
+            // Act
+            listBoxControlBinder.SetListBoxArray(listBox, entries);
+
+            // Assert
+            Assert.Equal(entries, listBox.Items);
+        }
+
+        [Fact]
+        public void GetListBoxArray_ReturnsListItems()
+        {
+            // Arrange
+            var listBoxControlBinder = new ListBoxControlBinder();
+            var listBox = new ListBox();
+            listBox.Items.AddRange(new object[] { "Item1", "Item2", "Item3" });
+
+            // Act
+            var result = listBoxControlBinder.GetListBoxArray(listBox);
+
+            // Assert
+            Assert.Equal(new List<string> { "Item1", "Item2", "Item3" }, result);
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Windows.Forms;
+using Connex.DynamicForms.Controls;
+using Newtonsoft.Json.Linq;
+using Xunit;
+
+namespace Connex.DynamicForms.Tests
+{
+    public class ListBoxControlBinderTests
+    {
+        [Fact]
+        public void SetValue_ValueInList_SetsSelectedItem()
+        {
+            // Arrange
+            var listBoxControlBinder = new ListBoxControlBinder();
+            var listBox = new ListBox();
+            listBox.Items.AddRange(new object[] { "Item1", "Item2", "Item3" });
+
+            // Act
+            listBoxControlBinder.SetValue(listBox, "Item2");
+
+            // Assert
+            Assert.Equal("Item2", listBox.SelectedItem);
+        }
+
+        [Fact]
+        public void SetValue_ValueNotInList_DoesNotChangeSelectedItem()
+        {
+            // Arrange
+            var listBoxControlBinder = new ListBoxControlBinder();
+            var listBox = new ListBox();
+            listBox.Items.AddRange(new object[] { "Item1", "Item2", "Item3" });
+
+            // Act
+            listBoxControlBinder.SetValue(listBox, "ItemNotInList");
+
+            // Assert
+            Assert.Null(listBox.SelectedItem);
+        }
+
+        [Fact]
+        public void GetValue_ReturnsSelectedItem()
+        {
+            // Arrange
+            var listBoxControlBinder = new ListBoxControlBinder();
+            var listBox = new ListBox();
+            listBox.Items.AddRange(new object[] { "Item1", "Item2", "Item3" });
+            listBox.SelectedIndex = 1;
+
+            // Act
+            var result = listBoxControlBinder.GetValue(listBox);
+
+            // Assert
+            Assert.Equal("Item2", result);
+        }
+
+        [Fact]
+        public void GetValue_NoItemSelected_ReturnsNull()
+        {
+            // Arrange
+            var listBoxControlBinder = new ListBoxControlBinder();
+            var listBox = new ListBox();
+
+            // Act
+            var result = listBoxControlBinder.GetValue(listBox);
+
+            // Assert
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void CreateControl_ReturnsInstanceOfListBoxControlBinder()
+        {
+            // Arrange
+            var listBoxControlBinder = new ListBoxControlBinder();
+
+            // Act
+            var result = listBoxControlBinder.CreateControl();
+
+            // Assert
+            Assert.IsType<ListBox>(result);
+        }
+
+        [Fact]
+        public void ApplyElementPropertiesFromJson_NullElement_DoesNotThrowException()
+        {
+            // Arrange
+            var listBoxControlBinder = new ListBoxControlBinder();
+            var listBox = new ListBox();
+
+            // Act & Assert (should not throw an exception)
+            Assert.Null(Record.Exception(() => listBoxControlBinder.ApplyElementPropertiesFromJson(listBox, null)));
+        }
+
+        [Fact]
+        public void ApplyElementPropertiesFromJson_MissingTextArray_DoesNotThrowException()
+        {
+            // Arrange
+            var listBoxControlBinder = new ListBoxControlBinder();
+            var listBox = new ListBox();
+            var element = JObject.Parse("{}");
+
+            // Act & Assert (should not throw an exception)
+            Assert.Null(Record.Exception(() => listBoxControlBinder.ApplyElementPropertiesFromJson(listBox, element)));
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Windows.Forms;
+using Connex.DynamicForms.Controls;
+using Newtonsoft.Json.Linq;
+using Xunit;
+
+namespace Connex.DynamicForms.Tests
+{
+    public class ListBoxControlBinderTests
+    {
+        [Fact]
+        public void AttachEventHandlers_SelectedValueChangedEventHandlerIsAttached()
+        {
+            // Arrange
+            var listBoxControlBinder = new ListBoxControlBinder();
+            var listBox = new ListBox();
+            var values = new Dictionary<string, object>();
+            bool eventHandlerInvoked = false;
+
+            // Act
+            listBoxControlBinder.AttachEventHandlers(listBox, values, (name, v, action) => eventHandlerInvoked = true);
+            listBox.SelectedIndex = 1; // Simulating a selection change
+
+            // Assert
+            Assert.True(eventHandlerInvoked);
+        }
+
+        [Fact]
+        public void AttachEventHandlers_SelectedValueChangedEventHandlerIsDetached()
+        {
+            // Arrange
+            var listBoxControlBinder = new ListBoxControlBinder();
+            var listBox = new ListBox();
+            var values = new Dictionary<string, object>();
+            bool eventHandlerInvoked = false;
+
+            // Act
+            listBoxControlBinder.AttachEventHandlers(listBox, values, (name, v, action) => eventHandlerInvoked = true);
+            listBoxControlBinder.AttachEventHandlers(listBox, values, null);
+            listBox.SelectedIndex = 1; // Simulating a selection change
+
+            // Assert
+            Assert.False(eventHandlerInvoked);
+        }
+
+        [Fact]
+        public void SetControlText_TextInList_SetsSelectedItem()
+        {
+            // Arrange
+            var listBoxControlBinder = new ListBoxControlBinder();
+            var listBox = new ListBox();
+            listBox.Items.AddRange(new object[] { "Item1", "Item2", "Item3" });
+
+            // Act
+            listBoxControlBinder.SetControlText(listBox, "Item2");
+
+            // Assert
+            Assert.Equal("Item2", listBox.SelectedItem);
+        }
+
+        [Fact]
+        public void SetControlText_TextNotInList_DoesNotChangeSelectedItem()
+        {
+            // Arrange
+            var listBoxControlBinder = new ListBoxControlBinder();
+            var listBox = new ListBox();
+            listBox.Items.AddRange(new object[] { "Item1", "Item2", "Item3" });
+
+            // Act
+            listBoxControlBinder.SetControlText(listBox, "ItemNotInList");
+
+            // Assert
+            Assert.Null(listBox.SelectedItem);
+        }
+
+        [Fact]
+        public void SetControlText_NullText_DoesNotThrowException()
+        {
+            // Arrange
+            var listBoxControlBinder = new ListBoxControlBinder();
+            var listBox = new ListBox();
+
+            // Act & Assert (should not throw an exception)
+            Assert.Null(Record.Exception(() => listBoxControlBinder.SetControlText(listBox, null)));
+        }
+
+        [Fact]
+        public void GetControlText_SelectedItem_ReturnsSelectedItem()
+        {
+            // Arrange
+            var listBoxControlBinder = new ListBoxControlBinder();
+            var listBox = new ListBox();
+            listBox.Items.AddRange(new object[] { "Item1", "Item2", "Item3" });
+            listBox.SelectedIndex = 1;
+
+            // Act
+            var result = listBoxControlBinder.GetControlText(listBox);
+
+            // Assert
+            Assert.Equal("Item2", result);
+        }
+
+        [Fact]
+        public void GetControlText_NoItemSelected_ReturnsNull()
+        {
+            // Arrange
+            var listBoxControlBinder = new ListBoxControlBinder();
+            var listBox = new ListBox();
+
+            // Act
+            var result = listBoxControlBinder.GetControlText(listBox);
+
+            // Assert
+            Assert.Null(result);
+        }
+    }
+}
