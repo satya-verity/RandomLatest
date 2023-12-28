@@ -1,0 +1,147 @@
+3.1. IAst
+This interface represents entire AST tree by exposing the root AST node.
+
+Root - is the read-only property for providing AST root node.
+3.2. IAstNode
+This interface represents AST tree node. This node can have any number for children and acts as a container for construct details and additional information.
+
+Type - read only property which presents node type which correspond to node semantic. See AstNodeTypes  for details.
+Parent - read only property which presents the reference to the parent node
+Children - read only property which presents node children
+TypeSpec - read only property which presents type specifications related to the node. The typical example is assignment operation.  Optional.
+Properties - read only property which presents an additional information related to the node.
+AddChild - the method which allows add a child node
+3.3. AstNodeTypes
+This enumeration has definition for all AST node types. Please note that this list can be modified if it is needed.
+
+Program structure nodes
+
+PROGRAM - Represents the entire program
+PROCEDURE - Represents a procedure in the program
+FUNCTION - Represents a function in the program
+LABEL - Represents a label for goto  statements
+Statement related nodes
+
+COMPOUND - Represents a compound statement
+ASSIGN - Represents an assignment statement
+LOOP - Represents a loop statement
+TEST - Represents a test condition for a loop
+CALL - Represents a procedure or function call
+PARAMETERS - Represents the parameters in a procedure or function call
+REF_PARAM_GUARD - Represents a guard for reference parameters
+IF - Represents an if statement
+ELSEIF - Represents an elseif statement
+Relational operations related nodes
+
+EQ - Represents an equality check
+NE - Represents a not equal check
+LT - Represents a less than check
+LE - Represents a less than or equal to check
+GT - Represents a greater than check
+GE - Represents a greater than or equal to check
+NOT - Represents a logical not operation
+Additive operators related nodes
+
+ADD - Represents an addition operation
+SUBTRACT - Represents a subtraction operation
+OR - Represents a bitwise or operation
+NEGATE - Represents a negation operation
+Type conversion related node
+
+CONVERT - Represents a type conversion operation
+Multiplicative operators related nodes
+
+MULTIPLY - Represents a multiplication operation
+DIVIDE - Represents a division operation
+INTEGER_DIVIDE - Represents an integer division operation
+FLOAT_DIVIDE - Represents a floating point division operation
+MOD - Represents a modulus operation
+AND - Represents a logical and operation
+Powers related nodes
+
+POW - Represents a power operation
+Operands related nodes
+
+VARIABLE - Represents a variable
+SUBSCRIPTS - Represents variable qualifier (either call parameter or array indexes)
+FIELD - Represents a field access in a record
+INTEGER_CONSTANT - Represents an integer constant
+REAL_CONSTANT - Represents a real number constant
+STRING_CONSTANT - Represents a string constant
+BOOLEAN_CONSTANT - Represents a boolean constant
+Predefined variables related node
+
+RND - Represents the random number generator
+Miscellaneous commands related nodes. 
+
+WRITE_PARM - Represents a write parameter command
+CLS - Represents a clear screen command
+RANDOMIZE_TIMER - Represents a command to seed the random number generator with the current time
+INPUT - Represents an input command
+INPUT_QUESTION - Represents an input command with a question
+PRINT - Represents a print command
+PRINT_ATTACHED_SEGMENT - Represents a print command with an attached segment
+PRINT_TAB_SEGMENT - Represents a print command with a tab segment
+3.4. AstNodeProperties
+This class contains additional information for the AST node.
+
+Line - read only property for indicating source code line, related to the node.
+Id - read only property for indicating Id related to the node. Optional.
+Value - read only property for indicating value related to the node. Optional.
+Label - read only property for indicating label related to the node. Optional.
+3.5. AstFactory
+Factory class to create AST tree and AST nodes objects.
+
+createAst - method which creates IAst implementing instance.
+createNode - method which creates IAstNode implementing instance.
+3.6. AstToXmlConverter
+For the needs of debugging and testability AST to XML converter should allow to obtain human being readable AST tree representation. For example see code and it's AST below.
+
+Basic Code
+A(1) = 3.14
+AST
+<PROGRAM id="QuickBasicProgram" scope="MODULE" line="1">
+    <ASSIGN line="4" type_id="double">
+        <VARIABLE id="A" scope="PROCEDURE" type_id="double">
+            <SUBSCRIPTS type_id="double">
+                <INTEGER_CONSTANT value="1" type_id="integer" />
+            </SUBSCRIPTS>
+        </VARIABLE>
+        <CONVERT type_id="double">
+            <REAL_CONSTANT value="3.14" type_id="single" />
+        </CONVERT>
+    </ASSIGN>
+</PROGRAM>
+3.7. ITypeSpec
+This interface represents a type specification in the symbol table. It has the following read-only properties:
+
+Form: This property is of TypeForm type. It represents the form of the type specification, such as scalar, enumeration, subrange, array, or record.
+
+Identifier: This property is of ISymTabEntry type. It represents the symbol table entry for the identifier of the type specification.
+
+BaseType: This property is of ITypeSpec type. It represents the base type of the type specification. For example, in the case of an array type, the base type would be the type of the elements in the array.
+
+Properties: This property is of TypeSpecProperties type. It represents the properties of the type specification. The properties can vary depending on the form of the type specification.
+
+3.8. TypeForm
+This enumeration has definitions for meta types (type of types). 
+
+SCALAR - Represents a scalar type, which holds a single value. Examples include integer, real, boolean, etc.
+ENUMERATION - Represents an enumeration type, which is a user-defined type consisting of a set of named values.
+SUBRANGE - Represents a subrange type, which is a range of values of an ordinal type. For example, 1…10 is a subrange of the integer type.
+ARRAY - Represents an array type, which is a collection of elements that are of the same type and are identified by index values.
+RECORD - Represents a record type, which is a complex type that groups related fields of diverse types into a single type.
+3.9. ISysTabEntry
+The bridge interface to Symbol Table subsystem. Please see details in Symbol Table Design document.
+
+3.10. TypeSpecProperties
+This abstract class provides common parent for type specification related properties. The class descendances represent specific meta type properties sets.
+
+ScalarTypeProperties - This class inherits from TypeSpecProperties and represents properties specific to scalar types.
+EnumerationTypeProperties - This class inherits from TypeSpecProperties and represents properties specific to enumeration types. 
+
+SubrangeTypeProperties - This class inherits from TypeSpecProperties and represents properties specific to subrange types.
+
+ArrayTypeProperties - This class inherits from TypeSpecProperties and represents properties specific to array types. 
+
+RecordTypeProperties - This class inherits from TypeSpecProperties and represents properties specific to record types. 
