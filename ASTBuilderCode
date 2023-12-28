@@ -1,0 +1,431 @@
+// AstNodeTypes enumeration
+public enum AstNodeTypes
+{
+    PROGRAM,
+    PROCEDURE,
+    FUNCTION,
+    LABEL,
+    COMPOUND,
+    ASSIGN,
+    LOOP,
+    TEST,
+    CALL,
+    PARAMETERS,
+    REF_PARAM_GUARD,
+    IF,
+    ELSEIF,
+    EQ,
+    NE,
+    LT,
+    LE,
+    GT,
+    GE,
+    NOT,
+    ADD,
+    SUBTRACT,
+    OR,
+    NEGATE,
+    CONVERT,
+    MULTIPLY,
+    DIVIDE,
+    INTEGER_DIVIDE,
+    FLOAT_DIVIDE,
+    MOD,
+    AND,
+    POW,
+    VARIABLE,
+    SUBSCRIPTS,
+    FIELD,
+    INTEGER_CONSTANT,
+    REAL_CONSTANT,
+    STRING_CONSTANT,
+    BOOLEAN_CONSTANT,
+    RND,
+    WRITE_PARM,
+    CLS,
+    RANDOMIZE_TIMER,
+    INPUT,
+    INPUT_QUESTION,
+    PRINT,
+    PRINT_ATTACHED_SEGMENT,
+    PRINT_TAB_SEGMENT
+}
+
+// AstNodeProperties class
+public class AstNodeProperties
+{
+    public int Line { get; }
+    public int Id { get; }
+    public string Value { get; }
+    public string Label { get; }
+
+    public AstNodeProperties(int line, int id = 0, string value = null, string label = null)
+    {
+        Line = line;
+        Id = id;
+        Value = value;
+        Label = label;
+    }
+}
+
+// IAst interface
+public interface IAst
+{
+    IAstNode Root { get; }
+}
+
+// IAstNode interface
+public interface IAstNode
+{
+    AstNodeTypes Type { get; }
+    IAstNode Parent { get; }
+    IEnumerable<IAstNode> Children { get; }
+    ITypeSpec TypeSpec { get; }
+    AstNodeProperties Properties { get; }
+
+    void AddChild(IAstNode child);
+}
+
+// ITypeSpec interface
+public interface ITypeSpec
+{
+    TypeForm Form { get; }
+    ISymTabEntry Identifier { get; }
+    ITypeSpec BaseType { get; }
+    TypeSpecProperties Properties { get; }
+}
+
+// TypeForm enumeration
+public enum TypeForm
+{
+    SCALAR,
+    ENUMERATION,
+    SUBRANGE,
+    ARRAY,
+    RECORD
+}
+
+// ISymTabEntry interface
+public interface ISymTabEntry
+{
+    // Your symbol table entry properties go here
+}
+
+// TypeSpecProperties abstract class
+public abstract class TypeSpecProperties
+{
+    // Common properties for type specifications
+}
+
+// ScalarTypeProperties class
+public class ScalarTypeProperties : TypeSpecProperties
+{
+    // Specific properties for scalar types
+}
+
+// EnumerationTypeProperties class
+public class EnumerationTypeProperties : TypeSpecProperties
+{
+    // Specific properties for enumeration types
+}
+
+// SubrangeTypeProperties class
+public class SubrangeTypeProperties : TypeSpecProperties
+{
+    // Specific properties for subrange types
+}
+
+// ArrayTypeProperties class
+public class ArrayTypeProperties : TypeSpecProperties
+{
+    // Specific properties for array types
+}
+
+// RecordTypeProperties class
+public class RecordTypeProperties : TypeSpecProperties
+{
+    // Specific properties for record types
+}
+
+// AstFactory class
+public class AstFactory
+{
+    public IAst CreateAst(IAstNode root)
+    {
+        return new Ast { Root = root };
+    }
+
+    public IAstNode CreateNode(AstNodeTypes type, IAstNode parent, ITypeSpec typeSpec, AstNodeProperties properties)
+    {
+        return new AstNode(type, parent, typeSpec, properties);
+    }
+}
+
+// AstToXmlConverter class
+public class AstToXmlConverter
+{
+    public string ConvertToXml(IAst ast)
+    {
+        // Your implementation goes here
+        return "";
+    }
+}
+
+// Ast class
+public class Ast : IAst
+{
+    public IAstNode Root { get; set; }
+}
+
+// AstNode class
+public class AstNode : IAstNode
+{
+    public AstNodeTypes Type { get; }
+    public IAstNode Parent { get; }
+    public IEnumerable<IAstNode> Children { get; }
+    public ITypeSpec TypeSpec { get; }
+    public AstNodeProperties Properties { get; }
+
+    public AstNode(AstNodeTypes type, IAstNode parent, ITypeSpec typeSpec, AstNodeProperties properties)
+    {
+        Type = type;
+        Parent = parent;
+        TypeSpec = typeSpec;
+        Properties = properties;
+    }
+
+    public void AddChild(IAstNode child)
+    {
+        // Your implementation goes here
+    }
+}
+// Ast class
+public class Ast : IAst
+{
+    public IAstNode Root { get; set; }
+}
+
+// AstNode class
+public class AstNode : IAstNode
+{
+    private List<IAstNode> children;
+
+    public AstNodeTypes Type { get; }
+    public IAstNode Parent { get; }
+    public IEnumerable<IAstNode> Children => children;
+    public ITypeSpec TypeSpec { get; }
+    public AstNodeProperties Properties { get; }
+
+    public AstNode(AstNodeTypes type, IAstNode parent, ITypeSpec typeSpec, AstNodeProperties properties)
+    {
+        Type = type;
+        Parent = parent;
+        TypeSpec = typeSpec;
+        Properties = properties;
+        children = new List<IAstNode>();
+    }
+
+    public void AddChild(IAstNode child)
+    {
+        children.Add(child);
+    }
+}
+
+// AstFactory class
+public class AstFactory
+{
+    public IAst CreateAst(IAstNode root)
+    {
+        return new Ast { Root = root };
+    }
+
+    public IAstNode CreateNode(AstNodeTypes type, IAstNode parent, ITypeSpec typeSpec, AstNodeProperties properties)
+    {
+        return new AstNode(type, parent, typeSpec, properties);
+    }
+}
+
+// AstToXmlConverter class
+public class AstToXmlConverter
+{
+    public string ConvertToXml(IAst ast)
+    {
+        StringBuilder xmlBuilder = new StringBuilder();
+        xmlBuilder.AppendLine("<PROGRAM id=\"QuickBasicProgram\" scope=\"MODULE\" line=\"1\">");
+        ConvertNodeToXml(ast.Root, xmlBuilder, 1);
+        xmlBuilder.AppendLine("</PROGRAM>");
+        return xmlBuilder.ToString();
+    }
+
+    private void ConvertNodeToXml(IAstNode node, StringBuilder xmlBuilder, int indentation)
+    {
+        string indent = new string(' ', indentation * 4);
+        xmlBuilder.AppendLine($"{indent}<{node.Type.ToString()} line=\"{node.Properties.Line}\" type_id=\"{node.TypeSpec?.Form.ToString().ToLower()}\">");
+
+        foreach (var child in node.Children)
+        {
+            ConvertNodeToXml(child, xmlBuilder, indentation + 1);
+        }
+
+        xmlBuilder.AppendLine($"{indent}</{node.Type.ToString()}>");
+    }
+}
+// ITypeSpec interface
+public interface ITypeSpec
+{
+    TypeForm Form { get; }
+    ISymTabEntry Identifier { get; }
+    ITypeSpec BaseType { get; }
+    TypeSpecProperties Properties { get; }
+}
+
+// TypeSpec class
+public class TypeSpec : ITypeSpec
+{
+    public TypeForm Form { get; }
+    public ISymTabEntry Identifier { get; }
+    public ITypeSpec BaseType { get; }
+    public TypeSpecProperties Properties { get; }
+
+    public TypeSpec(TypeForm form, ISymTabEntry identifier, ITypeSpec baseType, TypeSpecProperties properties)
+    {
+        Form = form;
+        Identifier = identifier;
+        BaseType = baseType;
+        Properties = properties;
+    }
+}
+
+// TypeForm enumeration
+public enum TypeForm
+{
+    SCALAR,
+    ENUMERATION,
+    SUBRANGE,
+    ARRAY,
+    RECORD
+}
+
+// AstNodeProperties class
+public class AstNodeProperties
+{
+    public int Line { get; }
+    public int Id { get; }
+    public string Value { get; }
+    public string Label { get; }
+
+    public AstNodeProperties(int line, int id = 0, string value = null, string label = null)
+    {
+        Line = line;
+        Id = id;
+        Value = value;
+        Label = label;
+    }
+}
+
+// ScalarTypeProperties class
+public class ScalarTypeProperties : TypeSpecProperties
+{
+    // Specific properties for scalar types
+}
+
+// EnumerationTypeProperties class
+public class EnumerationTypeProperties : TypeSpecProperties
+{
+    // Specific properties for enumeration types
+}
+
+// SubrangeTypeProperties class
+public class SubrangeTypeProperties : TypeSpecProperties
+{
+    // Specific properties for subrange types
+}
+
+// ArrayTypeProperties class
+public class ArrayTypeProperties : TypeSpecProperties
+{
+    // Specific properties for array types
+}
+
+// RecordTypeProperties class
+public class RecordTypeProperties : TypeSpecProperties
+{
+    // Specific properties for record types
+}
+
+// AstFactory class
+public class AstFactory
+{
+    public IAst CreateAst(IAstNode root)
+    {
+        return new Ast { Root = root };
+    }
+
+    public IAstNode CreateNode(AstNodeTypes type, IAstNode parent, ITypeSpec typeSpec, AstNodeProperties properties)
+    {
+        return new AstNode(type, parent, typeSpec, properties);
+    }
+
+    public ITypeSpec CreateTypeSpec(TypeForm form, ISymTabEntry identifier, ITypeSpec baseType, TypeSpecProperties properties)
+    {
+        return new TypeSpec(form, identifier, baseType, properties);
+    }
+}
+// ScalarTypeProperties class
+public class ScalarTypeProperties : TypeSpecProperties
+{
+    public ScalarTypeProperties(int minRange, int maxRange, bool isSigned)
+    {
+        MinRange = minRange;
+        MaxRange = maxRange;
+        IsSigned = isSigned;
+    }
+
+    public int MinRange { get; }
+    public int MaxRange { get; }
+    public bool IsSigned { get; }
+}
+// ArrayTypeProperties class
+public class ArrayTypeProperties : TypeSpecProperties
+{
+    public ArrayTypeProperties(int size, ITypeSpec elementType)
+    {
+        Size = size;
+        ElementType = elementType;
+    }
+
+    public int Size { get; }
+    public ITypeSpec ElementType { get; }
+}
+// EnumerationTypeProperties class
+public class EnumerationTypeProperties : TypeSpecProperties
+{
+    public EnumerationTypeProperties(List<string> enumerationConstants)
+    {
+        EnumerationConstants = enumerationConstants;
+    }
+
+    public List<string> EnumerationConstants { get; }
+}
+// RecordTypeProperties class
+public class RecordTypeProperties : TypeSpecProperties
+{
+    public RecordTypeProperties(List<Tuple<string, ITypeSpec>> fields)
+    {
+        Fields = fields;
+    }
+
+    public List<Tuple<string, ITypeSpec>> Fields { get; }
+}
+// SubrangeTypeProperties class
+public class SubrangeTypeProperties : TypeSpecProperties
+{
+    public SubrangeTypeProperties(int minRange, int maxRange)
+    {
+        MinRange = minRange;
+        MaxRange = maxRange;
+    }
+
+    public int MinRange { get; }
+    public int MaxRange { get; }
+}
