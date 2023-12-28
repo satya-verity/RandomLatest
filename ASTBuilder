@@ -1,3 +1,54 @@
+
+AST Builder Design
+1. Context
+To reduce complexity and ambiguity related to DSL syntax and parse trees nature the last one should be converted to ASTs. In this context the source code infrastructure which allows AST trees building should be created.
+
+2. Requirements
+The following requirements ensure accurate representation of the source code’s structure and semantics, including aspects like variable types, statement order, operations, and more. Additionally, a mechanism should exist to render the AST in a human-readable format. 
+
+2.1. Tree Representation 
+An AST is a tree representation of the abstract syntactic structure of source code.
+
+2.2. Node Representation 
+Each node of the tree denotes a construct occurring in the source code.
+
+2.3. Order of Statements
+The order of executable statements must be explicitly represented and well defined.
+
+2.4. Operations 
+All components of operations, whether they are unary, binary, ternary, or otherwise, must be stored and correctly identified.
+
+2.5. Implicit Grouping 
+Grouping parentheses are implicit in the tree structure, so these do not have to be represented as separate nodes.
+
+2.6. Syntactic Constructs 
+A syntactic construct like an if-condition-then statement may be denoted by means of a single node with multiple branches.
+
+2.7. Variable Types
+Variable types must be preserved, as well as the location of each declaration in source code.
+
+2.8. Position Information 
+Each node should store its line number from the source code.
+
+2.9. Construct Details 
+Each node should contain details about the construct it represents in the source code.
+
+2.10. Additional Information 
+Nodes may contain additional information added during subsequent processing stages, such as contextual analysis.
+
+2.11. Readable Representation 
+A mechanism or tooling should be in place to convert the AST into a format that is easily readable and understandable by humans.
+
+3. Design
+The multi-way tree data structure suits well to address AST requirements and covers requirements from 2.1 to 2.6 without additional data structure extensions. The tree itself is presented by IAst  interface and with help of IAstNode  interface allows to build AST trees of any complexity.
+
+To satisfy 2.8, 2.9 and 2.10 requirements, IAstNode  is composed with AstNodeProperties class instance. The last one can be extended if needed to accommodate additional requirements.
+
+The ITypeSpec interface is needed to address the 2.7 requirement. The last one utilizes TypeSepcProperties  abstract class descendants to capture type's additional information similar to AstNodeProperties ussage for an IAstNode.
+
+The AstToXmlCoverter  addresses requirement 2.11.
+
+The overall design is presented on the diagram bellow. Please note that class attributes on interfaces represent C# properties.
 3.1. IAst
 This interface represents entire AST tree by exposing the root AST node.
 
