@@ -1,0 +1,1002 @@
+using Xunit;
+
+public class AstTests
+{
+    [Fact]
+    public void AstNodeTypes_Enum_ShouldContainAllNodeTypes()
+    {
+        // Arrange
+        var expectedNodeTypes = new AstNodeTypes[]
+        {
+            AstNodeTypes.PROGRAM, AstNodeTypes.PROCEDURE, AstNodeTypes.FUNCTION,
+            AstNodeTypes.LABEL, AstNodeTypes.COMPOUND, AstNodeTypes.ASSIGN,
+            // ... Add all other node types here
+            AstNodeTypes.PRINT_TAB_SEGMENT
+        };
+
+        // Act
+        var actualNodeTypes = Enum.GetValues(typeof(AstNodeTypes));
+
+        // Assert
+        Assert.Equal(expectedNodeTypes, actualNodeTypes);
+    }
+
+    [Fact]
+    public void AstFactory_CreateAst_ShouldReturnAstWithRoot()
+    {
+        // Arrange
+        var astFactory = new AstFactory();
+        var astNode = new AstNode(AstNodeTypes.PROGRAM, null, null, null);
+
+        // Act
+        var ast = astFactory.CreateAst(astNode);
+
+        // Assert
+        Assert.NotNull(ast);
+        Assert.Equal(astNode, ast.Root);
+    }
+
+    // Add more tests for other classes and methods as needed
+}
+using Xunit;
+
+public class AstNodePropertiesTests
+{
+    [Fact]
+    public void AstNodeProperties_ConstructWithDefaultValues()
+    {
+        // Arrange
+        const int expectedLine = 42;
+        const int expectedId = 0;
+        const string expectedValue = null;
+        const string expectedLabel = null;
+
+        // Act
+        var astNodeProperties = new AstNodeProperties(expectedLine);
+
+        // Assert
+        Assert.Equal(expectedLine, astNodeProperties.Line);
+        Assert.Equal(expectedId, astNodeProperties.Id);
+        Assert.Equal(expectedValue, astNodeProperties.Value);
+        Assert.Equal(expectedLabel, astNodeProperties.Label);
+    }
+
+    [Fact]
+    public void AstNodeProperties_ConstructWithCustomValues()
+    {
+        // Arrange
+        const int expectedLine = 42;
+        const int expectedId = 100;
+        const string expectedValue = "TestValue";
+        const string expectedLabel = "TestLabel";
+
+        // Act
+        var astNodeProperties = new AstNodeProperties(expectedLine, expectedId, expectedValue, expectedLabel);
+
+        // Assert
+        Assert.Equal(expectedLine, astNodeProperties.Line);
+        Assert.Equal(expectedId, astNodeProperties.Id);
+        Assert.Equal(expectedValue, astNodeProperties.Value);
+        Assert.Equal(expectedLabel, astNodeProperties.Label);
+    }
+
+    // Add more tests as needed, covering different scenarios and edge cases
+}
+using Xunit;
+
+public class AstNodePropertiesTests
+{
+    [Fact]
+    public void AstNodeProperties_ConstructWithNegativeId()
+    {
+        // Arrange
+        const int expectedLine = 42;
+        const int expectedId = -1;
+        const string expectedValue = "TestValue";
+        const string expectedLabel = "TestLabel";
+
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => new AstNodeProperties(expectedLine, expectedId, expectedValue, expectedLabel));
+    }
+
+    [Fact]
+    public void AstNodeProperties_ConstructWithNullValue()
+    {
+        // Arrange
+        const int expectedLine = 42;
+        const int expectedId = 100;
+        const string expectedValue = null;
+        const string expectedLabel = "TestLabel";
+
+        // Act
+        var astNodeProperties = new AstNodeProperties(expectedLine, expectedId, expectedValue, expectedLabel);
+
+        // Assert
+        Assert.Equal(expectedLine, astNodeProperties.Line);
+        Assert.Equal(expectedId, astNodeProperties.Id);
+        Assert.Null(astNodeProperties.Value);
+        Assert.Equal(expectedLabel, astNodeProperties.Label);
+    }
+
+    [Fact]
+    public void AstNodeProperties_ConstructWithEmptyLabel()
+    {
+        // Arrange
+        const int expectedLine = 42;
+        const int expectedId = 100;
+        const string expectedValue = "TestValue";
+        const string expectedLabel = "";
+
+        // Act
+        var astNodeProperties = new AstNodeProperties(expectedLine, expectedId, expectedValue, expectedLabel);
+
+        // Assert
+        Assert.Equal(expectedLine, astNodeProperties.Line);
+        Assert.Equal(expectedId, astNodeProperties.Id);
+        Assert.Equal(expectedValue, astNodeProperties.Value);
+        Assert.Equal(expectedLabel, astNodeProperties.Label);
+    }
+
+    // Add more tests as needed to cover different scenarios and edge cases
+}
+using Xunit;
+
+public class AstNodePropertiesTests
+{
+    [Fact]
+    public void AstNodeProperties_ConstructWithPositiveId()
+    {
+        // Arrange
+        const int expectedLine = 42;
+        const int expectedId = 1;
+        const string expectedValue = "TestValue";
+        const string expectedLabel = "TestLabel";
+
+        // Act
+        var astNodeProperties = new AstNodeProperties(expectedLine, expectedId, expectedValue, expectedLabel);
+
+        // Assert
+        Assert.Equal(expectedLine, astNodeProperties.Line);
+        Assert.Equal(expectedId, astNodeProperties.Id);
+        Assert.Equal(expectedValue, astNodeProperties.Value);
+        Assert.Equal(expectedLabel, astNodeProperties.Label);
+    }
+
+    [Fact]
+    public void AstNodeProperties_ConstructWithWhitespaceLabel()
+    {
+        // Arrange
+        const int expectedLine = 42;
+        const int expectedId = 100;
+        const string expectedValue = "TestValue";
+        const string expectedLabel = "   ";
+
+        // Act
+        var astNodeProperties = new AstNodeProperties(expectedLine, expectedId, expectedValue, expectedLabel);
+
+        // Assert
+        Assert.Equal(expectedLine, astNodeProperties.Line);
+        Assert.Equal(expectedId, astNodeProperties.Id);
+        Assert.Equal(expectedValue, astNodeProperties.Value);
+        Assert.Equal(expectedLabel, astNodeProperties.Label);
+    }
+
+    [Fact]
+    public void AstNodeProperties_ConstructWithDefaultId()
+    {
+        // Arrange
+        const int expectedLine = 42;
+        const int expectedId = 0;
+        const string expectedValue = "TestValue";
+        const string expectedLabel = "TestLabel";
+
+        // Act
+        var astNodeProperties = new AstNodeProperties(expectedLine, value: expectedValue, label: expectedLabel);
+
+        // Assert
+        Assert.Equal(expectedLine, astNodeProperties.Line);
+        Assert.Equal(expectedId, astNodeProperties.Id);
+        Assert.Equal(expectedValue, astNodeProperties.Value);
+        Assert.Equal(expectedLabel, astNodeProperties.Label);
+    }
+
+    // Add more tests as needed to cover different scenarios and edge cases
+}
+using Xunit;
+
+public class AstNodePropertiesTests
+{
+    [Fact]
+    public void AstNodeProperties_ConstructWithPositiveId()
+    {
+        // Arrange
+        const int expectedLine = 42;
+        const int expectedId = 1;
+        const string expectedValue = "TestValue";
+        const string expectedLabel = "TestLabel";
+
+        // Act
+        var astNodeProperties = new AstNodeProperties(expectedLine, expectedId, expectedValue, expectedLabel);
+
+        // Assert
+        Assert.Equal(expectedLine, astNodeProperties.Line);
+        Assert.Equal(expectedId, astNodeProperties.Id);
+        Assert.Equal(expectedValue, astNodeProperties.Value);
+        Assert.Equal(expectedLabel, astNodeProperties.Label);
+    }
+
+    [Fact]
+    public void AstNodeProperties_ConstructWithWhitespaceLabel()
+    {
+        // Arrange
+        const int expectedLine = 42;
+        const int expectedId = 100;
+        const string expectedValue = "TestValue";
+        const string expectedLabel = "   ";
+
+        // Act
+        var astNodeProperties = new AstNodeProperties(expectedLine, expectedId, expectedValue, expectedLabel);
+
+        // Assert
+        Assert.Equal(expectedLine, astNodeProperties.Line);
+        Assert.Equal(expectedId, astNodeProperties.Id);
+        Assert.Equal(expectedValue, astNodeProperties.Value);
+        Assert.Equal(expectedLabel, astNodeProperties.Label);
+    }
+
+    [Fact]
+    public void AstNodeProperties_ConstructWithDefaultId()
+    {
+        // Arrange
+        const int expectedLine = 42;
+        const int expectedId = 0;
+        const string expectedValue = "TestValue";
+        const string expectedLabel = "TestLabel";
+
+        // Act
+        var astNodeProperties = new AstNodeProperties(expectedLine, value: expectedValue, label: expectedLabel);
+
+        // Assert
+        Assert.Equal(expectedLine, astNodeProperties.Line);
+        Assert.Equal(expectedId, astNodeProperties.Id);
+        Assert.Equal(expectedValue, astNodeProperties.Value);
+        Assert.Equal(expectedLabel, astNodeProperties.Label);
+    }
+
+    // Add more tests as needed to cover different scenarios and edge cases
+}
+using System;
+using System.Collections.Generic;
+using Xunit;
+
+public class AstTests
+{
+    [Fact]
+    public void AstFactory_CreateAst_WithNullRoot_ShouldThrowArgumentNullException()
+    {
+        // Arrange
+        var astFactory = new AstFactory();
+
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => astFactory.CreateAst(null));
+    }
+
+    // Add more tests as needed for AstFactory class
+
+    [Fact]
+    public void AstNode_AddChild_WithNullChild_ShouldThrowArgumentNullException()
+    {
+        // Arrange
+        var parent = new AstNode(AstNodeTypes.PROGRAM, null, null, null);
+
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => parent.AddChild(null));
+    }
+
+    [Fact]
+    public void AstNode_AddChild_ShouldSetParentForChild()
+    {
+        // Arrange
+        var parent = new AstNode(AstNodeTypes.PROGRAM, null, null, null);
+        var child = new AstNode(AstNodeTypes.VARIABLE, null, null, null);
+
+        // Act
+        parent.AddChild(child);
+
+        // Assert
+        Assert.Equal(parent, child.Parent);
+    }
+
+    // Add more tests as needed for AstNode class
+
+    [Fact]
+    public void AstNodeProperties_ConstructWithNegativeId_ShouldThrowArgumentException()
+    {
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => new AstNodeProperties(42, -1, "value", "label"));
+    }
+
+    [Fact]
+    public void AstNodeProperties_ConstructWithEmptyLabel_ShouldSetLabelToNull()
+    {
+        // Arrange
+        const int expectedLine = 42;
+        const int expectedId = 1;
+        const string expectedValue = "TestValue";
+        const string expectedLabel = "";
+
+        // Act
+        var astNodeProperties = new AstNodeProperties(expectedLine, expectedId, expectedValue, expectedLabel);
+
+        // Assert
+        Assert.Equal(expectedLine, astNodeProperties.Line);
+        Assert.Equal(expectedId, astNodeProperties.Id);
+        Assert.Equal(expectedValue, astNodeProperties.Value);
+        Assert.Null(astNodeProperties.Label);
+    }
+
+    // Add more tests as needed for AstNodeProperties class
+
+    [Fact]
+    public void TypeSpec_ConstructWithNullIdentifier_ShouldThrowArgumentNullException()
+    {
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => new TypeSpec(TypeForm.SCALAR, null, null, null));
+    }
+
+    // Add more tests as needed for TypeSpec class
+}
+using System;
+using System.Collections.Generic;
+using Xunit;
+
+public class AstTests
+{
+    [Fact]
+    public void AstFactory_CreateAst_WithNullRoot_ShouldThrowArgumentNullException()
+    {
+        // Arrange
+        var astFactory = new AstFactory();
+
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => astFactory.CreateAst(null));
+    }
+
+    [Fact]
+    public void AstFactory_CreateAst_ShouldReturnAstWithRoot()
+    {
+        // Arrange
+        var astFactory = new AstFactory();
+        var astNode = new AstNode(AstNodeTypes.PROGRAM, null, null, null);
+
+        // Act
+        var ast = astFactory.CreateAst(astNode);
+
+        // Assert
+        Assert.NotNull(ast);
+        Assert.Equal(astNode, ast.Root);
+    }
+
+    [Fact]
+    public void AstFactory_CreateNode_ShouldCreateNodeWithCorrectProperties()
+    {
+        // Arrange
+        var astFactory = new AstFactory();
+        var parent = new AstNode(AstNodeTypes.PROGRAM, null, null, null);
+        var type = AstNodeTypes.VARIABLE;
+        var typeSpec = new TypeSpec(TypeForm.SCALAR, null, null, null);
+        var properties = new AstNodeProperties(42, 1, "value", "label");
+
+        // Act
+        var node = astFactory.CreateNode(type, parent, typeSpec, properties);
+
+        // Assert
+        Assert.NotNull(node);
+        Assert.Equal(type, node.Type);
+        Assert.Equal(parent, node.Parent);
+        Assert.Empty(node.Children);
+        Assert.Equal(typeSpec, node.TypeSpec);
+        Assert.Equal(properties, node.Properties);
+    }
+
+    // Add more tests as needed for other classes and methods
+}
+
+public class AstNodeTests
+{
+    [Fact]
+    public void AstNode_AddChild_WithNullChild_ShouldThrowArgumentNullException()
+    {
+        // Arrange
+        var parent = new AstNode(AstNodeTypes.PROGRAM, null, null, null);
+
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => parent.AddChild(null));
+    }
+
+    [Fact]
+    public void AstNode_AddChild_ShouldSetParentForChild()
+    {
+        // Arrange
+        var parent = new AstNode(AstNodeTypes.PROGRAM, null, null, null);
+        var child = new AstNode(AstNodeTypes.VARIABLE, null, null, null);
+
+        // Act
+        parent.AddChild(child);
+
+        // Assert
+        Assert.Equal(parent, child.Parent);
+    }
+
+    // Add more tests as needed for AstNode class
+}
+
+public class AstNodePropertiesTests
+{
+    [Fact]
+    public void AstNodeProperties_ConstructWithNegativeId_ShouldThrowArgumentException()
+    {
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => new AstNodeProperties(42, -1, "value", "label"));
+    }
+
+    [Fact]
+    public void AstNodeProperties_ConstructWithEmptyLabel_ShouldSetLabelToNull()
+    {
+        // Arrange
+        const int expectedLine = 42;
+        const int expectedId = 1;
+        const string expectedValue = "TestValue";
+        const string expectedLabel = "";
+
+        // Act
+        var astNodeProperties = new AstNodeProperties(expectedLine, expectedId, expectedValue, expectedLabel);
+
+        // Assert
+        Assert.Equal(expectedLine, astNodeProperties.Line);
+        Assert.Equal(expectedId, astNodeProperties.Id);
+        Assert.Equal(expectedValue, astNodeProperties.Value);
+        Assert.Null(astNodeProperties.Label);
+    }
+
+    // Add more tests as needed for AstNodeProperties class
+}
+
+// Add more test classes as needed for other classes and interfaces
+using System;
+using System.Collections.Generic;
+using Xunit;
+
+public class AstNodeTests
+{
+    [Fact]
+    public void AstNode_Constructor_ShouldSetPropertiesCorrectly()
+    {
+        // Arrange
+        var type = AstNodeTypes.PROCEDURE;
+        var parent = new AstNode(AstNodeTypes.PROGRAM, null, null, null);
+        var typeSpec = new TypeSpec(TypeForm.SCALAR, null, null, null);
+        var properties = new AstNodeProperties(42, 1, "value", "label");
+
+        // Act
+        var astNode = new AstNode(type, parent, typeSpec, properties);
+
+        // Assert
+        Assert.Equal(type, astNode.Type);
+        Assert.Equal(parent, astNode.Parent);
+        Assert.Empty(astNode.Children);
+        Assert.Equal(typeSpec, astNode.TypeSpec);
+        Assert.Equal(properties, astNode.Properties);
+    }
+
+    [Fact]
+    public void AstNode_AddChild_ShouldAddChildCorrectly()
+    {
+        // Arrange
+        var astNode = new AstNode(AstNodeTypes.PROCEDURE, null, null, null);
+        var child = new AstNode(AstNodeTypes.VARIABLE, astNode, null, null);
+
+        // Act
+        astNode.AddChild(child);
+
+        // Assert
+        Assert.Single(astNode.Children);
+        Assert.Equal(child, astNode.Children.Single());
+        Assert.Equal(astNode, child.Parent);
+    }
+
+    [Fact]
+    public void AstNode_AddChild_WithNullChild_ShouldThrowArgumentNullException()
+    {
+        // Arrange
+        var astNode = new AstNode(AstNodeTypes.PROCEDURE, null, null, null);
+
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => astNode.AddChild(null));
+    }
+
+    // Add more tests as needed for AstNode class
+}
+using System;
+using System.Collections.Generic;
+using Xunit;
+
+public class AstNodeTests
+{
+    [Fact]
+    public void AstNode_AddChild_WithExistingParent_ShouldUpdateExistingParent()
+    {
+        // Arrange
+        var parent1 = new AstNode(AstNodeTypes.PROCEDURE, null, null, null);
+        var parent2 = new AstNode(AstNodeTypes.PROCEDURE, null, null, null);
+        var child = new AstNode(AstNodeTypes.VARIABLE, parent1, null, null);
+
+        // Act
+        parent2.AddChild(child);
+
+        // Assert
+        Assert.Single(parent2.Children);
+        Assert.Equal(child, parent2.Children.Single());
+        Assert.Equal(parent2, child.Parent);
+        Assert.DoesNotContain(child, parent1.Children);
+        Assert.Null(parent1.Children.SingleOrDefault());
+    }
+
+    [Fact]
+    public void AstNode_AddChild_WithSameChildTwice_ShouldThrowInvalidOperationException()
+    {
+        // Arrange
+        var astNode = new AstNode(AstNodeTypes.PROCEDURE, null, null, null);
+        var child = new AstNode(AstNodeTypes.VARIABLE, astNode, null, null);
+
+        // Act
+        astNode.AddChild(child);
+
+        // Assert
+        Assert.Throws<InvalidOperationException>(() => astNode.AddChild(child));
+    }
+
+    [Fact]
+    public void AstNode_AddChild_WithCircularReference_ShouldThrowInvalidOperationException()
+    {
+        // Arrange
+        var astNode1 = new AstNode(AstNodeTypes.PROCEDURE, null, null, null);
+        var astNode2 = new AstNode(AstNodeTypes.VARIABLE, astNode1, null, null);
+
+        // Act & Assert
+        Assert.Throws<InvalidOperationException>(() => astNode1.AddChild(astNode2));
+    }
+
+    [Fact]
+    public void AstNode_Properties_ShouldNotBeNullAfterConstruction()
+    {
+        // Act
+        var astNode = new AstNode(AstNodeTypes.PROCEDURE, null, null, null);
+
+        // Assert
+        Assert.NotNull(astNode.Type);
+        Assert.Null(astNode.Parent);
+        Assert.NotNull(astNode.Children);
+        Assert.Empty(astNode.Children);
+        Assert.Null(astNode.TypeSpec);
+        Assert.Null(astNode.Properties);
+    }
+
+    // Add more tests as needed for AstNode class
+}
+using System;
+using System.Collections.Generic;
+using Xunit;
+
+public class TypeSpecPropertiesTests
+{
+    // ScalarTypeProperties tests
+    [Fact]
+    public void ScalarTypeProperties_HasCorrectMinRange()
+    {
+        var scalarType = new ScalarTypeProperties(1, 10, true);
+        Assert.Equal(1, scalarType.MinRange);
+    }
+
+    [Fact]
+    public void ScalarTypeProperties_HasCorrectMaxRange()
+    {
+        var scalarType = new ScalarTypeProperties(1, 10, true);
+        Assert.Equal(10, scalarType.MaxRange);
+    }
+
+    [Fact]
+    public void ScalarTypeProperties_HasCorrectSignedFlag()
+    {
+        var scalarType = new ScalarTypeProperties(1, 10, true);
+        Assert.True(scalarType.IsSigned);
+    }
+
+    // ArrayTypeProperties tests
+    [Fact]
+    public void ArrayTypeProperties_HasCorrectSize()
+    {
+        var elementType = new ScalarTypeProperties(1, 5, true);
+        var arrayType = new ArrayTypeProperties(10, elementType);
+        Assert.Equal(10, arrayType.Size);
+    }
+
+    [Fact]
+    public void ArrayTypeProperties_HasCorrectElementType()
+    {
+        var elementType = new ScalarTypeProperties(1, 5, true);
+        var arrayType = new ArrayTypeProperties(10, elementType);
+        Assert.Equal(elementType, arrayType.ElementType);
+    }
+
+    // EnumerationTypeProperties tests
+    [Fact]
+    public void EnumerationTypeProperties_HasCorrectConstants()
+    {
+        var constants = new List<string> { "A", "B", "C" };
+        var enumType = new EnumerationTypeProperties(constants);
+        Assert.Equal(constants, enumType.EnumerationConstants);
+    }
+
+    // RecordTypeProperties tests
+    [Fact]
+    public void RecordTypeProperties_HasCorrectFields()
+    {
+        var fields = new List<Tuple<string, ITypeSpec>> { Tuple.Create("Field1", new ScalarTypeProperties(1, 5, true)) };
+        var recordType = new RecordTypeProperties(fields);
+        Assert.Equal(fields, recordType.Fields);
+    }
+
+    // SubrangeTypeProperties tests
+    [Fact]
+    public void SubrangeTypeProperties_HasCorrectMinRange()
+    {
+        var subrangeType = new SubrangeTypeProperties(1, 10);
+        Assert.Equal(1, subrangeType.MinRange);
+    }
+
+    [Fact]
+    public void SubrangeTypeProperties_HasCorrectMaxRange()
+    {
+        var subrangeType = new SubrangeTypeProperties(1, 10);
+        Assert.Equal(10, subrangeType.MaxRange);
+    }
+}
+using System;
+using System.Collections.Generic;
+using Xunit;
+
+public class TypeSpecPropertiesTests
+{
+    // ScalarTypeProperties tests
+    [Fact]
+    public void ScalarTypeProperties_HasCorrectMinRange()
+    {
+        var scalarType = new ScalarTypeProperties(1, 10, true);
+        Assert.Equal(1, scalarType.MinRange);
+    }
+
+    [Fact]
+    public void ScalarTypeProperties_HasCorrectMaxRange()
+    {
+        var scalarType = new ScalarTypeProperties(1, 10, true);
+        Assert.Equal(10, scalarType.MaxRange);
+    }
+
+    [Fact]
+    public void ScalarTypeProperties_HasCorrectSignedFlag()
+    {
+        var scalarType = new ScalarTypeProperties(1, 10, true);
+        Assert.True(scalarType.IsSigned);
+    }
+
+    // ArrayTypeProperties tests
+    [Fact]
+    public void ArrayTypeProperties_HasCorrectSize()
+    {
+        var elementType = new ScalarTypeProperties(1, 5, true);
+        var arrayType = new ArrayTypeProperties(10, elementType);
+        Assert.Equal(10, arrayType.Size);
+    }
+
+    [Fact]
+    public void ArrayTypeProperties_HasCorrectElementType()
+    {
+        var elementType = new ScalarTypeProperties(1, 5, true);
+        var arrayType = new ArrayTypeProperties(10, elementType);
+        Assert.Equal(elementType, arrayType.ElementType);
+    }
+
+    // EnumerationTypeProperties tests
+    [Fact]
+    public void EnumerationTypeProperties_HasCorrectConstants()
+    {
+        var constants = new List<string> { "A", "B", "C" };
+        var enumType = new EnumerationTypeProperties(constants);
+        Assert.Equal(constants, enumType.EnumerationConstants);
+    }
+
+    // RecordTypeProperties tests
+    [Fact]
+    public void RecordTypeProperties_HasCorrectFields()
+    {
+        var field1 = new Tuple<string, ITypeSpec>("Field1", new ScalarTypeProperties(1, 5, true));
+        var field2 = new Tuple<string, ITypeSpec>("Field2", new ScalarTypeProperties(0, 10, false));
+        var fields = new List<Tuple<string, ITypeSpec>> { field1, field2 };
+        var recordType = new RecordTypeProperties(fields);
+        Assert.Equal(fields, recordType.Fields);
+    }
+
+    // SubrangeTypeProperties tests
+    [Fact]
+    public void SubrangeTypeProperties_HasCorrectMinRange()
+    {
+        var subrangeType = new SubrangeTypeProperties(1, 10);
+        Assert.Equal(1, subrangeType.MinRange);
+    }
+
+    [Fact]
+    public void SubrangeTypeProperties_HasCorrectMaxRange()
+    {
+        var subrangeType = new SubrangeTypeProperties(1, 10);
+        Assert.Equal(10, subrangeType.MaxRange);
+    }
+
+    // Additional ScalarTypeProperties tests
+    [Fact]
+    public void ScalarTypeProperties_EqualsAnotherInstanceWithSameValues()
+    {
+        var scalarType1 = new ScalarTypeProperties(1, 10, true);
+        var scalarType2 = new ScalarTypeProperties(1, 10, true);
+        Assert.Equal(scalarType1, scalarType2);
+    }
+
+    [Fact]
+    public void ScalarTypeProperties_DoesNotEqualInstanceWithDifferentValues()
+    {
+        var scalarType1 = new ScalarTypeProperties(1, 10, true);
+        var scalarType2 = new ScalarTypeProperties(0, 5, false);
+        Assert.NotEqual(scalarType1, scalarType2);
+    }
+}
+
+using System;
+using System.Collections.Generic;
+using Xunit;
+
+public class TypeSpecPropertiesTests
+{
+    // ScalarTypeProperties tests
+    [Fact]
+    public void ScalarTypeProperties_HasCorrectMinRange()
+    {
+        var scalarType = new ScalarTypeProperties(1, 10, true);
+        Assert.Equal(1, scalarType.MinRange);
+    }
+
+    [Fact]
+    public void ScalarTypeProperties_HasCorrectMaxRange()
+    {
+        var scalarType = new ScalarTypeProperties(1, 10, true);
+        Assert.Equal(10, scalarType.MaxRange);
+    }
+
+    [Fact]
+    public void ScalarTypeProperties_HasCorrectSignedFlag()
+    {
+        var scalarType = new ScalarTypeProperties(1, 10, true);
+        Assert.True(scalarType.IsSigned);
+    }
+
+    [Fact]
+    public void ScalarTypeProperties_CorrectlyImplementsEquality()
+    {
+        var scalarType1 = new ScalarTypeProperties(1, 10, true);
+        var scalarType2 = new ScalarTypeProperties(1, 10, true);
+        var scalarType3 = new ScalarTypeProperties(0, 5, false);
+
+        Assert.Equal(scalarType1, scalarType2);
+        Assert.NotEqual(scalarType1, scalarType3);
+    }
+
+    // ArrayTypeProperties tests
+    [Fact]
+    public void ArrayTypeProperties_HasCorrectSize()
+    {
+        var elementType = new ScalarTypeProperties(1, 5, true);
+        var arrayType = new ArrayTypeProperties(10, elementType);
+        Assert.Equal(10, arrayType.Size);
+    }
+
+    [Fact]
+    public void ArrayTypeProperties_HasCorrectElementType()
+    {
+        var elementType = new ScalarTypeProperties(1, 5, true);
+        var arrayType = new ArrayTypeProperties(10, elementType);
+        Assert.Equal(elementType, arrayType.ElementType);
+    }
+
+    // EnumerationTypeProperties tests
+    [Fact]
+    public void EnumerationTypeProperties_HasCorrectConstants()
+    {
+        var constants = new List<string> { "A", "B", "C" };
+        var enumType = new EnumerationTypeProperties(constants);
+        Assert.Equal(constants, enumType.EnumerationConstants);
+    }
+
+    // RecordTypeProperties tests
+    [Fact]
+    public void RecordTypeProperties_HasCorrectFields()
+    {
+        var field1 = new Tuple<string, ITypeSpec>("Field1", new ScalarTypeProperties(1, 5, true));
+        var field2 = new Tuple<string, ITypeSpec>("Field2", new ScalarTypeProperties(0, 10, false));
+        var fields = new List<Tuple<string, ITypeSpec>> { field1, field2 };
+        var recordType = new RecordTypeProperties(fields);
+        Assert.Equal(fields, recordType.Fields);
+    }
+
+    [Fact]
+    public void RecordTypeProperties_CorrectlyImplementsEquality()
+    {
+        var field1 = new Tuple<string, ITypeSpec>("Field1", new ScalarTypeProperties(1, 5, true));
+        var field2 = new Tuple<string, ITypeSpec>("Field2", new ScalarTypeProperties(0, 10, false));
+        var fields1 = new List<Tuple<string, ITypeSpec>> { field1, field2 };
+        var fields2 = new List<Tuple<string, ITypeSpec>> { field1, field2 };
+        var fields3 = new List<Tuple<string, ITypeSpec>> { field2, field1 };
+
+        var recordType1 = new RecordTypeProperties(fields1);
+        var recordType2 = new RecordTypeProperties(fields2);
+        var recordType3 = new RecordTypeProperties(fields3);
+
+        Assert.Equal(recordType1, recordType2);
+        Assert.NotEqual(recordType1, recordType3);
+    }
+
+    // SubrangeTypeProperties tests
+    [Fact]
+    public void SubrangeTypeProperties_HasCorrectMinRange()
+    {
+        var subrangeType = new SubrangeTypeProperties(1, 10);
+        Assert.Equal(1, subrangeType.MinRange);
+    }
+
+    [Fact]
+    public void SubrangeTypeProperties_HasCorrectMaxRange()
+    {
+        var subrangeType = new SubrangeTypeProperties(1, 10);
+        Assert.Equal(10, subrangeType.MaxRange);
+    }
+
+    // Additional SubrangeTypeProperties test
+    [Fact]
+    public void SubrangeTypeProperties_CorrectlyImplementsEquality()
+    {
+        var subrangeType1 = new SubrangeTypeProperties(1, 10);
+        var subrangeType2 = new SubrangeTypeProperties(1, 10);
+        var subrangeType3 = new SubrangeTypeProperties(0, 5);
+
+        Assert.Equal(subrangeType1, subrangeType2);
+        Assert.NotEqual(subrangeType1, subrangeType3);
+    }
+}
+using System;
+using System.Collections.Generic;
+using Xunit;
+
+public class TypeSpecPropertiesTests
+{
+    // ScalarTypeProperties tests
+    [Fact]
+    public void ScalarTypeProperties_HasCorrectMinRange()
+    {
+        var scalarType = new ScalarTypeProperties(1, 10, true);
+        Assert.Equal(1, scalarType.MinRange);
+    }
+
+    [Fact]
+    public void ScalarTypeProperties_HasCorrectMaxRange()
+    {
+        var scalarType = new ScalarTypeProperties(1, 10, true);
+        Assert.Equal(10, scalarType.MaxRange);
+    }
+
+    [Fact]
+    public void ScalarTypeProperties_HasCorrectSignedFlag()
+    {
+        var scalarType = new ScalarTypeProperties(1, 10, true);
+        Assert.True(scalarType.IsSigned);
+    }
+
+    [Fact]
+    public void ScalarTypeProperties_CorrectlyImplementsEquality()
+    {
+        var scalarType1 = new ScalarTypeProperties(1, 10, true);
+        var scalarType2 = new ScalarTypeProperties(1, 10, true);
+        var scalarType3 = new ScalarTypeProperties(0, 5, false);
+
+        Assert.Equal(scalarType1, scalarType2);
+        Assert.NotEqual(scalarType1, scalarType3);
+    }
+
+    // ArrayTypeProperties tests
+    [Fact]
+    public void ArrayTypeProperties_HasCorrectSize()
+    {
+        var elementType = new ScalarTypeProperties(1, 5, true);
+        var arrayType = new ArrayTypeProperties(10, elementType);
+        Assert.Equal(10, arrayType.Size);
+    }
+
+    [Fact]
+    public void ArrayTypeProperties_HasCorrectElementType()
+    {
+        var elementType = new ScalarTypeProperties(1, 5, true);
+        var arrayType = new ArrayTypeProperties(10, elementType);
+        Assert.Equal(elementType, arrayType.ElementType);
+    }
+
+    // EnumerationTypeProperties tests
+    [Fact]
+    public void EnumerationTypeProperties_HasCorrectConstants()
+    {
+        var constants = new List<string> { "A", "B", "C" };
+        var enumType = new EnumerationTypeProperties(constants);
+        Assert.Equal(constants, enumType.EnumerationConstants);
+    }
+
+    // RecordTypeProperties tests
+    [Fact]
+    public void RecordTypeProperties_HasCorrectFields()
+    {
+        var field1 = new Tuple<string, ITypeSpec>("Field1", new ScalarTypeProperties(1, 5, true));
+        var field2 = new Tuple<string, ITypeSpec>("Field2", new ScalarTypeProperties(0, 10, false));
+        var fields = new List<Tuple<string, ITypeSpec>> { field1, field2 };
+        var recordType = new RecordTypeProperties(fields);
+        Assert.Equal(fields, recordType.Fields);
+    }
+
+    [Fact]
+    public void RecordTypeProperties_CorrectlyImplementsEquality()
+    {
+        var field1 = new Tuple<string, ITypeSpec>("Field1", new ScalarTypeProperties(1, 5, true));
+        var field2 = new Tuple<string, ITypeSpec>("Field2", new ScalarTypeProperties(0, 10, false));
+        var fields1 = new List<Tuple<string, ITypeSpec>> { field1, field2 };
+        var fields2 = new List<Tuple<string, ITypeSpec>> { field1, field2 };
+        var fields3 = new List<Tuple<string, ITypeSpec>> { field2, field1 };
+
+        var recordType1 = new RecordTypeProperties(fields1);
+        var recordType2 = new RecordTypeProperties(fields2);
+        var recordType3 = new RecordTypeProperties(fields3);
+
+        Assert.Equal(recordType1, recordType2);
+        Assert.NotEqual(recordType1, recordType3);
+    }
+
+    // SubrangeTypeProperties tests
+    [Fact]
+    public void SubrangeTypeProperties_HasCorrectMinRange()
+    {
+        var subrangeType = new SubrangeTypeProperties(1, 10);
+        Assert.Equal(1, subrangeType.MinRange);
+    }
+
+    [Fact]
+    public void SubrangeTypeProperties_HasCorrectMaxRange()
+    {
+        var subrangeType = new SubrangeTypeProperties(1, 10);
+        Assert.Equal(10, subrangeType.MaxRange);
+    }
+
+    // Additional SubrangeTypeProperties test
+    [Fact]
+    public void SubrangeTypeProperties_CorrectlyImplementsEquality()
+    {
+        var subrangeType1 = new SubrangeTypeProperties(1, 10);
+        var subrangeType2 = new SubrangeTypeProperties(1, 10);
+        var subrangeType3 = new SubrangeTypeProperties(0, 5);
+
+        Assert.Equal(subrangeType1, subrangeType2);
+        Assert.NotEqual(subrangeType1, subrangeType3);
+    }
+}
