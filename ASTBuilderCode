@@ -117,88 +117,22 @@ public abstract class TypeSpecProperties
     // Common properties for type specifications
 }
 
-// ScalarTypeProperties class
-public class ScalarTypeProperties : TypeSpecProperties
-{
-    // Specific properties for scalar types
-}
-
-// EnumerationTypeProperties class
-public class EnumerationTypeProperties : TypeSpecProperties
-{
-    // Specific properties for enumeration types
-}
-
-// SubrangeTypeProperties class
-public class SubrangeTypeProperties : TypeSpecProperties
-{
-    // Specific properties for subrange types
-}
-
-// ArrayTypeProperties class
-public class ArrayTypeProperties : TypeSpecProperties
-{
-    // Specific properties for array types
-}
-
-// RecordTypeProperties class
-public class RecordTypeProperties : TypeSpecProperties
-{
-    // Specific properties for record types
-}
 
 // AstFactory class
 public class AstFactory
 {
-    public IAst CreateAst(IAstNode root)
-    {
-        return new Ast { Root = root };
-    }
-
+     public IAst CreateAst(IAstNode root)
+  {
+      root.Parent = null;
+      return new Ast { Root = root };
+  }
     public IAstNode CreateNode(AstNodeTypes type, IAstNode parent, ITypeSpec typeSpec, AstNodeProperties properties)
     {
         return new AstNode(type, parent, typeSpec, properties);
     }
 }
 
-// AstToXmlConverter class
-public class AstToXmlConverter
-{
-    public string ConvertToXml(IAst ast)
-    {
-        // Your implementation goes here
-        return "";
-    }
-}
 
-// Ast class
-public class Ast : IAst
-{
-    public IAstNode Root { get; set; }
-}
-
-// AstNode class
-public class AstNode : IAstNode
-{
-    public AstNodeTypes Type { get; }
-    public IAstNode Parent { get; }
-    public IEnumerable<IAstNode> Children { get; }
-    public ITypeSpec TypeSpec { get; }
-    public AstNodeProperties Properties { get; }
-
-    public AstNode(AstNodeTypes type, IAstNode parent, ITypeSpec typeSpec, AstNodeProperties properties)
-    {
-        Type = type;
-        Parent = parent;
-        TypeSpec = typeSpec;
-        Properties = properties;
-    }
-
-    public void AddChild(IAstNode child)
-    {
-        // Your implementation goes here
-    }
-}
 // Ast class
 public class Ast : IAst
 {
@@ -224,26 +158,13 @@ public class AstNode : IAstNode
         Properties = properties;
         children = new List<IAstNode>();
     }
-
-    public void AddChild(IAstNode child)
-    {
-        children.Add(child);
-    }
+  public void AddChild(IAstNode child)
+  {
+      if(Children == null) Children=new List<IAstNode> ();
+      children.Add(child);
+  }
 }
 
-// AstFactory class
-public class AstFactory
-{
-    public IAst CreateAst(IAstNode root)
-    {
-        return new Ast { Root = root };
-    }
-
-    public IAstNode CreateNode(AstNodeTypes type, IAstNode parent, ITypeSpec typeSpec, AstNodeProperties properties)
-    {
-        return new AstNode(type, parent, typeSpec, properties);
-    }
-}
 
 // AstToXmlConverter class
 public class AstToXmlConverter
@@ -323,35 +244,6 @@ public class AstNodeProperties
     }
 }
 
-// ScalarTypeProperties class
-public class ScalarTypeProperties : TypeSpecProperties
-{
-    // Specific properties for scalar types
-}
-
-// EnumerationTypeProperties class
-public class EnumerationTypeProperties : TypeSpecProperties
-{
-    // Specific properties for enumeration types
-}
-
-// SubrangeTypeProperties class
-public class SubrangeTypeProperties : TypeSpecProperties
-{
-    // Specific properties for subrange types
-}
-
-// ArrayTypeProperties class
-public class ArrayTypeProperties : TypeSpecProperties
-{
-    // Specific properties for array types
-}
-
-// RecordTypeProperties class
-public class RecordTypeProperties : TypeSpecProperties
-{
-    // Specific properties for record types
-}
 
 // AstFactory class
 public class AstFactory
