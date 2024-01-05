@@ -1,0 +1,269 @@
+The key stone of the design is ISymTabEntry  interface. This interface keeps records of unique identifiers in the program and fits general and UDT requirements. The Definition enumeration provides information about what type of identifier is stored into the entry and descendant of SymTabProperties  class provides an additional identifier type specific information. The ITypeSpec  aggregation provides type specific information for the identifier.
+
+The ISymTab  interface represents a memory scope and provides operation for identifies entries registration and lookup.
+
+The ISymTabScopeResolver  provides memory scope management and the MemoryScope  enumeration defines list of the memory scopes available.
+
+The overall design is presented on the diagram bellow. Please note that class attributes on interfaces represent C# properties.
+
+
+
+Here is detailed breakdown of the class diagram.
+
+4.1. ISymTabEntry
+The ISymTabEntry interface represents a single entry in the Symbol Table. Each entry corresponds to a symbol in the source code.
+
+Properties:
+
+Name - This is the unique identifier for the symbol. It could be the name of a variable, function, procedure, or user-defined type.
+SymTab - This is the symbol table that contains this entry.
+Definition - This represents how the symbol is used in the program. 
+TypeSpec - This is the data type of the symbol. 
+LineNumbers - This is a list of line numbers in the source code where the symbol is used.
+Properties - This is a collection of additional properties for the symbol. It could include information like the scope of the symbol, the value of the symbol (for variables), and other usage information.
+Methods:
+
+AppendLineNumber - This method is used to add a line number to the LineNumbers list. It indicates another line in the source code where the symbol is used.
+4.2. Definition
+The Definition enumeration provides information about what type of identifier is stored into the entry.
+
+CONSTANT - This is used for symbols that represent constants. Their value doesn’t change once it’s set.
+ENUMERATION_CONSTANT - This is used for constants that are part of an enumeration. Enumerations are a list of named constants.
+TYPE - This is used for symbols that represent user-defined types.
+VARIABLE - This is used for symbols that represent variables. Their value can change.
+FIELD - This is used for symbols that represent fields in a user-defined type.
+VALUE_PARAM - This is used for symbols that represent value parameters in a procedure or function. Value parameters get a copy of the value that’s passed in.
+VAR_PARAM - This is used for symbols that represent variable parameters in a procedure or function. Variable parameters get the actual variable that’s passed in, not a copy.
+PROGRAM_PARAM - This is used for symbols that represent parameters passed to the program.
+PROGRAM - This is used for symbols that represent the program itself.
+PROCEDURE - This is used for symbols that represent procedures.
+FUNCTION - This is used for symbols that represent functions.
+UNDEFINED - This is used for symbols that haven’t been given a definition yet.
+4.3. SymTabEntryProperties
+The SymTabEntryProperties class hierarchy in the Symbol Table is designed to store specific information about different kinds of symbols in a structured way. The base class, SymTabEntryProperties, provides a common structure, while subclasses like ScopeWrapperProperties, ConstantProperties, ProcedureProperties, and VariableProperties add specific properties for different symbol types. 
+
+IPropertiesSet - This is a tag interface. It doesn’t have any methods or properties itself, but classes that implement this interface are marked as having a specific behavior.
+
+SymTabEntryProperties - This is an abstract class that implements the IPropertiesSet interface. It provides a common structure for storing properties about a symbol table entry.
+
+ConstantProperties - This class also extends SymTabEntryProperties. It’s used for symbols that represent constants. It adds properties related to the constant’s value.
+ProcedureProperties - This class extends SymTabEntryProperties as well. It’s used for symbols that represent procedures. It adds properties related to the procedure’s parameters and body.
+
+VariableProperties - This class extends SymTabEntryProperties too. It’s used for symbols that represent variables. It adds properties related to the variable’s value and usage.
+
+4.4. ITypeSpec
+The bridge interface to AST Builder subsystem. Please see details in AST Builder Design document.
+
+4.5. ISymTab
+The ISymTab  interface represents a memory scope and provides operation for identifies entries registration and lookup.
+
+Properties:
+
+Scope - This represents the memory scope of the symbol table. 
+NestingLevel - This is the level of nesting for the current scope. The global scope has a nesting level of 0, and each new scope within that increases the nesting level by 1.
+Entries - This is a collection of all the entries in the symbol table. Each entry is an instance of the ISymTabEntry interface.
+Methods:
+
+Enter - This method is used to add a new entry to the symbol table. It takes the name of the symbol as a parameter and returns the new ISymTabEntry. If the name exists in the scope already the method should return entry for already registered name.
+Lookup - This method is used to find an entry in the symbol table. It takes the name of the symbol as a parameter and returns the corresponding ISymTabEntry if it exists and otherwise it returns null .
+4.6. ISymTabScopeResolver
+The ISymTabScopeResolver interface provides a structured way to manage memory scopes in the Symbol Table. See 3.9 for more details.
+
+Properties:
+
+ModuleId - This represents the current module or program in the symbol table.
+Methods:
+
+SetModuleName - This method sets the name of the current module.
+UseMemoryContext - This method sets the active memory scope to the specified scope.
+GetActiveMemoryScope - This method returns the currently active memory scope.
+CreateFreshProcedureContext - This method creates a new memory scope for a procedure.
+CreateCustomTypeContext - This method creates a new memory scope for a user-defined type.
+EnterActive - This method adds a new entry to the active memory scope.
+Lookup - This method finds an entry in all memory scopes starting from the active one and popping up until entry is found or it reviews all available scopes. Returns either found entry or null if there is no such entry.
+LookupInScope - This method finds an entry in the specified memory scope.
+GetMemoryContext - This method returns the memory context for the specified scope.
+4.7. MemoryScope
+The MemoryScope  enumeration defines list of the memory scopes.
+
+ROOT - This represents the root scope of the program. It’s the broadest scope and contains symbols that are accessible throughout the program. This scope is mostly used for defining embedded to the language elementary data types and predefined functions.
+GLOBAL - This represents the global scope. Symbols in this scope are accessible throughout the program, but they are not as broad as the root scope. This scope is used as a common space if multiple modules should share functions or variables. 
+MODULE - This represents the module scope. Symbols in this scope are only accessible within the module they are defined in.
+CUSTOM_TYPE - This represents the scope of a user-defined type. Symbols in this scope are the fields within the user-defined type.
+PROCEDURE - This represents the scope of a procedure. Symbols in this scope are only accessible within the procedure they are defined in.
+4.8. SymTabToXmlConverter
+The SymTabToXmlConverter class is designed to provide a human-readable representation of Symbol Table related elements in XML format. This can be useful for debugging and understanding the state of the Symbol Table at any point in time.
+
+Methods:
+
+ToXml (overridden) - This method takes an ISymTabScopeResolver object as a parameter and returns a string representation of all the scopes in XML format.
+ToXml (overridden) - This method takes an ISymTab object as a parameter and returns a string representation of the scope in XML format.
+ToXml (overridden) - This method takes an ISymTabEntry object as a parameter and returns a string representation of the entry in XML format.
+4.9. Memory Scopes Management
+In contrast to many popular programming languages OML as a Basic dialect has a relatively simple scope management model. It is because the language must not support code blocks or first-class functions (see Closure for details) which require using nested scoping with complicated visibility rules.
+
+The OML supports scopes described in 3.7 and they are organized in hierarchical manner. Each scope has its own symbol table.
+
+
+
+The ROOT scope content is populated at the initialization and should not be changed by any statements in the source code. This scope has all elementary data types and embedded functions definitions providing support for language hardcoded features. 
+
+The GLOBAL scope is empty after initialization and should be populated by the source code statements. This scope is intended to keep entries for global, shared between modules, variables. See Page 149 for details.
+
+The MODULE scope is empty after initialization and should be populated by appropriate source code statements. This scope contains all module global variables, types and procedures. 
+
+The PROCEDURE scope is created for each procedure (function (Page 141) or subroutine (Page 263)). The symbol table is stored at ProcedureProperties class instance. 
+
+The CUSTOM_TYPE scope is created for each User Defined Type (UDT Page 273). The symbol table is stored as RecordTypeProperties instance, and it is a part of type specification. See AST Builder Design for details.
+
+The concept of Active Memory Scope (or Active Memory Context) is used to define current scope for EneterActive and Lookup operations. The active memory scope defines current scope on the hierarchy and allows preforming names resolution not only for the active context but through entire hierarchy.
+
+The name lookup resolution process begins at the active scope and moves upwards through the hierarchy if the name cannot be found. This means that if a name is not found in the current scope, the process will look in the parent scope, and so on, until it reaches the root scope. For example, if a name is not found in a PROCEDURE scope, the process will look in the MODULE scope, then the GLOBAL scope, and finally the ROOT scope. This hierarchy allows for efficient name resolution and helps prevent naming conflicts across different scopes in the program.
+
+4.10. PROCEDURE Scope
+A new PROCEDURE scope is created for each function or subroutine in the module. It keeps entries of local variables specific for the procedure. The UDT are not allowed for this scope.
+
+The provided OML code snippet effectively demonstrates the principles of name lookup within a procedure scope. 
+
+' GLOBAL scope
+DIM GLOBAL globalVar AS INTEGER
+globalVar = 10
+ 
+' MODULE scope
+DIM moduleVar AS INTEGER
+moduleVar = 20
+ 
+SUB ProcedureScope
+    ' PROCEDURE scope
+    DIM procedureVar AS INTEGER
+    procedureVar = 30
+ 
+    PRINT "Procedure Scope: "; procedureVar
+    PRINT "Module Scope: "; moduleVar
+    PRINT "Global Scope: "; globalVar
+END SUB
+ 
+CALL ProcedureScope
+The ProcedureScope  subroutine can access variables from the module and global scopes. The name lookup resolution goes from the active scope (procedure scope) to the top of the hierarchy (global scope). If a name cannot be found in the procedure scope, it looks in the module scope, and then in the global scope and finally to the root. If a name still cannot be found, an error occurs. This is why ProcedureScope can print the values of procedureVar , moduleVar , and globalVar .
+
+4.11. CUSTOM_TYPE Scope
+A new CUSTOM_TYPE scope is created for each User-Defined Type (UDT) that is declared. This unique scope for each UDT allows encapsulation to be facilitated and naming conflicts between different UDTs to be avoided.
+
+The CUSTOM_TYPE scope is utilized for resolving the names of User-Defined Types (UDTs). There are certain limitations associated with UDTs in the OML. Specifically, it’s not possible to declare a UDT that is shared across multiple modules. Additionally, nested type definitions are not permitted.
+
+The way to create a nested UDTs in OML is define them separately. Once a nested UDT is fully defined, it can be used as a field type in an outer UDT. The newly defined type can then be used as a field type in other UDTs.
+
+The following code snippet illustrates how a nested UDT can be declared at the MODULE level.
+
+' Nested UDT
+TYPE InnerType
+    innerVar AS INTEGER
+END TYPE
+ 
+' Outer UDT
+TYPE OuterType
+    outerVar AS INTEGER
+    innerInstance AS InnerType
+END TYPE
+ 
+DIM outerInstance AS OuterType
+outerInstance.outerVar = 10
+outerInstance.innerInstance.innerVar = 20
+ 
+PRINT "Outer UDT Scope: "; outerInstance.outerVar
+PRINT "Inner UDT Scope: "; outerInstance.innerInstance.innerVar
+At the moment of InnerType declaration the corresponding new entry is created and entered into MODULE scope. The INTEGER type of innerVar field is resolved from the ROOT scope.
+
+Then at the declaration of the OuterType UDT, newly declared `InnerType` of innerInstance field is retrieved from the MODULE scope. This process demonstrates how the symbol table effectively resolves types during the construction of nested UDTs.
+
+4.12. Readable Representation
+For the needs of debugging and testability Symbol Table to XML Converter should allow to obtain human being readable symbol table representation. The example below uses nested UDTs as the most complex case to illustrate how symbol table entry could be presented as an XML. Please note that output format is not final and could be changed or extended during development process if needed.
+
+
+Source code
+135
+136
+137
+138
+139
+140
+141
+142
+143
+TYPE RegType                ' Intel x86 registers
+    AS INTEGER AX, BX, CX, DX, BP, SI, DI, Flags, FS, ES
+END TYPE
+ 
+TYPE ProcessType            ' Process definition
+    PID     AS INTEGER      ' Process identifier
+    Name    AS STRING * 20  ' Process file name
+    State   AS RegType      ' Process registers state for multitasking
+END TYPE
+
+
+RegType XML representation
+<SYMBOL name = "RegType" scope = "MODULE" defintion = "TYPE">
+    <LINES>135, 142</LINES>
+    <TYPE from = "RECORD"/>
+    <SYMBOL name = "AX" scope = "CUSTOM_TYPE" definition = "FIELD">
+        <LINES>136<LINES>
+        <TYPE form = "SCALAR" id = "integer"/>
+    </SYMBOL>
+    <SYMBOL name = "BX" scope = "CUSTOM_TYPE" definition = "FIELD">
+        <LINES>136<LINES>
+        <TYPE form = "SCALAR" id = "integer"/>
+    </SYMBOL>
+    <SYMBOL name = "CX" scope = "CUSTOM_TYPE" definition = "FIELD">
+        <LINES>136<LINES>
+        <TYPE form = "SCALAR" id = "integer"/>
+    </SYMBOL>
+    <SYMBOL name = "DX" scope = "CUSTOM_TYPE" definition = "FIELD">
+        <LINES>136<LINES>
+        <TYPE form = "SCALAR" id = "integer"/>
+    </SYMBOL>
+    <SYMBOL name = "BP" scope = "CUSTOM_TYPE" definition = "FIELD">
+        <LINES>136<LINES>
+        <TYPE form = "SCALAR" id = "integer"/>
+    </SYMBOL>
+    <SYMBOL name = "SI" scope = "CUSTOM_TYPE" definition = "FIELD">
+        <LINES>136<LINES>
+        <TYPE form = "SCALAR" id = "integer"/>
+    </SYMBOL>
+    <SYMBOL name = "Flags" scope = "CUSTOM_TYPE" definition = "FIELD">
+        <LINES>136<LINES>
+        <TYPE form = "SCALAR" id = "integer"/>
+    </SYMBOL>
+    <SYMBOL name = "FS" scope = "CUSTOM_TYPE" definition = "FIELD">
+        <LINES>136<LINES>
+        <TYPE form = "SCALAR" id = "integer"/>
+    </SYMBOL>
+    <SYMBOL name = "ES" scope = "CUSTOM_TYPE" definition = "FIELD">
+        <LINES>136<LINES>
+        <TYPE form = "SCALAR" id = "integer"/>
+    </SYMBOL>
+</SYMBOL>
+ProcessType XML representation
+<SYMBOL name = "ProcessType" scope = "MODULE" defintion = "TYPE">
+    <LINES>139</LINES>
+    <TYPE from = "RECORD"/>
+    <SYMBOL name = "Name" scope = "CUSTOM_TYPE" definition = "FIELD">
+        <LINES>141<LINES>
+        <TYPE form = "ARRAY">
+            <INDEX form = "SUBRANGE" range = "1..20">
+                <BASE_TYPE form = "SCALAR" id = "integer"/>
+            </INDEX>
+            <ELEMENT>
+                <TYPE form = "SCALAR" id = "char"/>
+            </ELEMENT>
+            <SIZE>20</SIZE>
+        </TYPE>
+    </SYMBOL>
+    <SYMBOL name = "PID" scope = "CUSTOM_TYPE" definition = "FIELD">
+        <LINES>140<LINES>
+        <TYPE form = "SCALAR" id = "integer"/>
+    </SYMBOL>
+    <SYMBOL name = "State" scope = "CUSTOM_TYPE" definition = "FIELD">
+        <LINES>142<LINES>
+        <TYPE form = "RECORD" id = "RegType"/>
+    </SYMBOL>
+</SYMBOL>
