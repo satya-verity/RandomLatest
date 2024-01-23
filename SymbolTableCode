@@ -1,0 +1,205 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+public enum Definition
+{
+    CONSTANT,
+    ENUMERATION_CONSTANT,
+    TYPE,
+    VARIABLE,
+    FIELD,
+    VALUE_PARAM,
+    VAR_PARAM,
+    PROGRAM_PARAM,
+    PROGRAM,
+    PROCEDURE,
+    FUNCTION,
+    UNDEFINED
+}
+
+public interface IPropertiesSet { }
+
+public abstract class SymTabEntryProperties : IPropertiesSet { }
+
+public class ConstantProperties : SymTabEntryProperties { }
+
+public class ProcedureProperties : SymTabEntryProperties { }
+
+public class VariableProperties : SymTabEntryProperties { }
+
+public interface ITypeSpec { }
+
+public interface ISymTabEntry
+{
+    string Name { get; set; }
+    ISymTab SymTab { get; set; }
+    Definition Definition { get; set; }
+    ITypeSpec TypeSpec { get; set; }
+    List<int> LineNumbers { get; set; }
+    IPropertiesSet Properties { get; set; }
+
+    void AppendLineNumber(int lineNumber);
+}
+
+public class SymTabEntry : ISymTabEntry
+{
+    public string Name { get; set; }
+    public ISymTab SymTab { get; set; }
+    public Definition Definition { get; set; }
+    public ITypeSpec TypeSpec { get; set; }
+    public List<int> LineNumbers { get; set; }
+    public IPropertiesSet Properties { get; set; }
+
+    public SymTabEntry(string name, ISymTab symTab, Definition definition, ITypeSpec typeSpec)
+    {
+        Name = name;
+        SymTab = symTab;
+        Definition = definition;
+        TypeSpec = typeSpec;
+        LineNumbers = new List<int>();
+        Properties = null; // You can set specific properties based on the definition
+    }
+
+    public void AppendLineNumber(int lineNumber)
+    {
+        LineNumbers.Add(lineNumber);
+    }
+}
+
+public enum MemoryScope
+{
+    ROOT,
+    GLOBAL,
+    MODULE,
+    CUSTOM_TYPE,
+    PROCEDURE
+}
+
+public interface ISymTab
+{
+    MemoryScope Scope { get; set; }
+    int NestingLevel { get; set; }
+    List<ISymTabEntry> Entries { get; set; }
+
+    ISymTabEntry Enter(string name);
+    ISymTabEntry Lookup(string name);
+}
+
+public class SymTab : ISymTab
+{
+    public MemoryScope Scope { get; set; }
+    public int NestingLevel { get; set; }
+    public List<ISymTabEntry> Entries { get; set; }
+
+    public SymTab(MemoryScope scope, int nestingLevel)
+    {
+        Scope = scope;
+        NestingLevel = nestingLevel;
+        Entries = new List<ISymTabEntry>();
+    }
+
+    public ISymTabEntry Enter(string name)
+    {
+        // Implement entry creation and insertion logic
+        var entry = new SymTabEntry(name, this, Definition.UNDEFINED, null);
+        Entries.Add(entry);
+        return entry;
+    }
+
+    public ISymTabEntry Lookup(string name)
+    {
+        // Implement entry lookup logic
+        return Entries.Find(e => e.Name == name);
+    }
+}
+
+public interface ISymTabScopeResolver
+{
+    string ModuleId { get; set; }
+
+    void SetModuleName(string moduleName);
+    void UseMemoryContext(MemoryScope memoryScope);
+    MemoryScope GetActiveMemoryScope();
+    void CreateFreshProcedureContext();
+    void CreateCustomTypeContext();
+    ISymTabEntry EnterActive(string name);
+    ISymTabEntry Lookup(string name);
+    ISymTabEntry LookupInScope(string name);
+    ISymTab GetMemoryContext(MemoryScope memoryScope);
+}
+
+public class SymTabScopeResolver : ISymTabScopeResolver
+{
+    public string ModuleId { get; set; }
+    private MemoryScope activeMemoryScope;
+
+    public void SetModuleName(string moduleName)
+    {
+        ModuleId = moduleName;
+    }
+
+    public void UseMemoryContext(MemoryScope memoryScope)
+    {
+        activeMemoryScope = memoryScope;
+    }
+
+    public MemoryScope GetActiveMemoryScope()
+    {
+        return activeMemoryScope;
+    }
+
+    public void CreateFreshProcedureContext()
+    {
+        // Implement logic to create a new memory scope for a procedure
+    }
+
+    public void CreateCustomTypeContext()
+    {
+        // Implement logic to create a new memory scope for a user-defined type
+    }
+
+    public ISymTabEntry EnterActive(string name)
+    {
+        // Implement entry creation and insertion logic in the active memory scope
+        return null;
+    }
+
+    public ISymTabEntry Lookup(string name)
+    {
+        // Implement entry lookup logic in all memory scopes starting from the active one
+        return null;
+    }
+
+    public ISymTabEntry LookupInScope(string name)
+    {
+        // Implement entry lookup logic in the specified memory scope
+        return null;
+    }
+
+    public ISymTab GetMemoryContext(MemoryScope memoryScope)
+    {
+        // Implement logic to return the memory context for the specified scope
+        return null;
+    }
+}
+
+public class SymTabToXmlConverter
+{
+    // Implement methods for converting ISymTabScopeResolver, ISymTab, and ISymTabEntry to XML
+}
+
+class Program
+{
+    static void Main()
+    {
+        // Sample usage of the implemented classes
+        ISymTab symTab = new SymTab(MemoryScope.GLOBAL, 0);
+        ISymTabEntry entry = symTab.Enter("variable1");
+
+        entry.AppendLineNumber(10);
+        entry.AppendLineNumber(15);
+
+        Console.WriteLine($"Symbol: {entry.Name}, Definition: {entry.Definition}, Type: {entry.TypeSpec}, Line Numbers: {string.Join(", ", entry.LineNumbers)}");
+    }
+}
