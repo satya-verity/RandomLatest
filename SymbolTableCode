@@ -203,3 +203,201 @@ class Program
         Console.WriteLine($"Symbol: {entry.Name}, Definition: {entry.Definition}, Type: {entry.TypeSpec}, Line Numbers: {string.Join(", ", entry.LineNumbers)}");
     }
 }
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+public enum MemoryScope
+{
+    ROOT,
+    GLOBAL,
+    MODULE,
+    PROCEDURE,
+    CUSTOM_TYPE
+}
+
+public interface ISymTabEntry
+{
+    string Name { get; }
+    string Type { get; set; }
+}
+
+public interface ISymTab
+{
+    MemoryScope Scope { get; }
+    List<ISymTabEntry> Entries { get; }
+}
+
+public interface ISymTabScopeResolver
+{
+    MemoryScope ActiveMemoryScope { get; }
+    void SetModuleName(string moduleName);
+    void UseMemoryContext(MemoryScope memoryScope);
+    ISymTabEntry EnterSymbol(string name, string type);
+    ISymTabEntry LookupSymbol(string name);
+    ISymTab GetMemoryContext();
+}
+
+public class SymTabEntry : ISymTabEntry
+{
+    public string Name { get; }
+    public string Type { get; set; }
+
+    public SymTabEntry(string name, string type)
+    {
+        Name = name;
+        Type = type;
+    }
+}
+
+public class SymTab : ISymTab
+{
+    public MemoryScope Scope { get; }
+    public List<ISymTabEntry> Entries { get; }
+
+    public SymTab(MemoryScope scope)
+    {
+        Scope = scope;
+        Entries = new List<ISymTabEntry>();
+    }
+}
+
+public class SymTabScopeResolver : ISymTabScopeResolver
+{
+    public MemoryScope ActiveMemoryScope { get; private set; }
+    private string moduleId;
+    private SymTab rootScope;
+    private SymTab currentScope;
+
+    public SymTabScopeResolver()
+    {
+        ActiveMemoryScope = MemoryScope.ROOT;
+        rootScope = new SymTab(MemoryScope.ROOT);
+        currentScope = rootScope;
+        InitializeHierarchy();
+    }
+
+    private void InitializeHierarchy()
+    {
+        var globalScope = AddChildScope(MemoryScope.GLOBAL);
+        AddChildScope(MemoryScope.MODULE);
+        AddChildScope(MemoryScope.PROCEDURE);
+        AddChildScope(MemoryScope.CUSTOM_TYPE);
+
+        // Add link from MODULE to GLOBAL
+        globalScope.Entries.Add(new SymTabEntry("MODULE_TO_GLOBAL", "LINK"));
+    }
+
+    private SymTab AddChildScope(MemoryScope scope)
+    {
+        var childScope = new SymTab(scope);
+        currentScope.Entries.Add(new SymTabEntry($"{currentScope.Scope}_TO_{scope}", "LINK"));
+        currentScope = childScope;
+        return childScope;
+    }
+
+    public void SetModuleName(string moduleName)
+    {
+        moduleId = moduleName;
+    }
+
+    public void UseMemoryContext(MemoryScope memoryScope)
+    {
+        ActiveMemoryScope = memoryScope;
+        currentScope = FindScope(rootScope, memoryScope);
+    }
+
+    private SymTab FindScope(SymTab scope, MemoryScope targetScope)
+    {
+        if (scope.Scope == targetScope)
+            return scope;
+
+        foreach (var entry in scope.Entries)
+        {
+            if (entry.Type == "LINK")
+            {
+                var linkedScope = FindScope(currentScope, targetScope);
+                if (linkedScope != null)
+                    return linkedScope;
+            }
+        }
+
+        return null;
+    }
+
+    public ISymTabEntry EnterSymbol(string name, string type)
+    {
+        var entry = new SymTabEntry(name, type);
+        currentScope.Entries.Add(entry);
+        return entry;
+    }
+
+    public ISymTabEntry LookupSymbol(string name)
+    {
+        var result = LookupSymbolInScope(currentScope, name);
+        if (result != null)
+            return result;
+
+        return LookupSymbolInParentScopes(rootScope, name);
+    }
+
+    private ISymTabEntry LookupSymbolInScope(SymTab scope, string name)
+    {
+        return scope.Entries.Find(entry => entry.Name == name);
+    }
+
+    private ISymTabEntry LookupSymbolInParentScopes(SymTab scope, string name)
+    {
+        foreach (var entry in scope.Entries)
+        {
+            if (entry.Type == "LINK")
+            {
+                var linkedScope = FindScope(scope, ActiveMemoryScope);
+                if (linkedScope != null)
+                {
+                    var result = LookupSymbolInScope(linkedScope, name);
+                    if (result != null)
+                        return result;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public ISymTab GetMemoryContext()
+    {
+        return currentScope;
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        ISymTabScopeResolver symTabScopeResolver = new SymTabScopeResolver();
+        symTabScopeResolver.SetModuleName("MainModule");
+
+        symTabScopeResolver.UseMemoryContext(MemoryScope.GLOBAL);
+        symTabScopeResolver.EnterSymbol("globalVar", "INTEGER");
+
+        symTabScopeResolver.UseMemoryContext(MemoryScope.MODULE);
+        symTabScopeResolver.EnterSymbol("moduleVar", "REAL");
+
+        symTabScopeResolver.UseMemoryContext(MemoryScope.PROCEDURE);
+        symTabScopeResolver.EnterSymbol("localVar", "BOOLEAN");
+
+        ISymTabEntry lookupResult = symTabScopeResolver.LookupSymbol("moduleVar");
+
+        if (lookupResult != null)
+        {
+            Console.WriteLine($"Found entry: {lookupResult.Name} with type {lookupResult.Type} in {symTabScopeResolver.ActiveMemoryScope} scope.");
+        }
+        else
+        {
+            Console.WriteLine("Entry not found.");
+        }
+    }
+}
+
