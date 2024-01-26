@@ -1,0 +1,187 @@
+ public enum Definition
+  {
+      CONSTANT,
+      ENUMERATION_CONSTANT,
+      TYPE,
+      VARIABLE,
+      FIELD,
+      VALUE_PARAM,
+      VAR_PARAM,
+      PROGRAM_PARAM,
+      PROGRAM,
+      PROCEDURE,
+      FUNCTION,
+      UNDEFINED
+  }
+  public enum MemoryScope
+  {
+      ROOT,
+      GLOBAL,
+      MODULE,
+      CUSTOM_TYPE,
+      PROCEDURE
+  }
+
+ public class SymbolTable : ISymbolTable
+ {
+     public MemoryScope Scope { get; set; }
+     public int NestingLevel { get; set; }
+     public IEnumerable<ISymbolTableEntry> Entries { get; set; }
+
+     public SymbolTable(MemoryScope scope, int nestingLevel)
+     {
+         Scope = scope;
+         NestingLevel = nestingLevel;
+         Entries = new List<ISymbolTableEntry>();
+     }
+     public SymbolTable(MemoryScope scope)
+     {
+         Scope = scope;
+         Entries = new List<ISymbolTableEntry>();
+     }
+
+     public ISymbolTableEntry Enter(string name)
+     {
+         var entry = this.Lookup(name);
+         if (entry == null)
+         {
+             entry = new SymbolTableEntry(name);
+             Entries.ToList().Add(entry);
+         }
+         return entry;
+     }
+
+     public ISymbolTableEntry Lookup(string name)
+     {
+         return Entries.ToList().Find(e => e.Name == name);
+     }
+ }
+
+ public class SymbolTableEntry: ISymbolTableEntry
+ {
+     public string Name { get; set; }
+     public ISymbolTable SymbolTable { get; set; }
+     public Definition Definition { get; set; }
+     public ITypeSpec TypeSpec { get; set; }
+     public IEnumerable<int> LineNumbers { get; set; }
+     public IPropertiesSet Properties { get; set; }
+
+     public SymbolTableEntry(string name)
+     {
+         Name = name;
+         LineNumbers = new List<int>();
+     }
+
+     public void AppendLineNumber(int lineNumber)
+     {
+         LineNumbers.ToList().Add(lineNumber);
+     }
+ }
+
+ public class SymbolTableScopeResolver : ISymbolTableScopeResolver
+ {
+     public MemoryScope ActiveMemoryScope { get; private set; }
+     public string ModuleId { set; get; }
+     private SymbolTable rootScope;
+     private SymbolTable globalScope;
+     private SymbolTable moduleScope;
+     private SymbolTable procedureScope;
+     private SymbolTable customScope;
+
+     private Dictionary<string, SymbolTable> symbolTables;
+
+     public SymbolTableScopeResolver()
+     {
+         InitializeScopes();
+     }
+
+     private void InitializeScopes()
+     {
+         symbolTables = new Dictionary<string, SymbolTable>();
+         this.rootScope = new SymbolTable(MemoryScope.ROOT);
+         this.globalScope = new SymbolTable(MemoryScope.GLOBAL);
+         this.moduleScope = new SymbolTable(MemoryScope.MODULE);
+     }
+
+     public void SetModuleName(string moduleName)
+     {
+         this.ModuleId = moduleName;
+     }
+
+     public void UseMemoryContext(MemoryScope memoryScope)
+     {
+         this.ActiveMemoryScope = memoryScope;
+     }
+
+     private SymbolTable GetSymbolTable(MemoryScope memoryScope)
+     {
+         switch (memoryScope)
+         {
+             case MemoryScope.ROOT: return this.rootScope;
+             case MemoryScope.GLOBAL: return this.globalScope;
+             case MemoryScope.MODULE: return this.moduleScope;
+             case MemoryScope.PROCEDURE: return this.procedureScope;
+             case MemoryScope.CUSTOM_TYPE: return this.customScope;
+             default: return null;
+         }
+     }
+
+     private MemoryScope GetParentScope(MemoryScope memoryScope)
+     {
+         switch (memoryScope)
+         {
+             case MemoryScope.GLOBAL: return MemoryScope.ROOT;
+             case MemoryScope.MODULE: return MemoryScope.GLOBAL;
+             case MemoryScope.PROCEDURE: return MemoryScope.MODULE;
+             case MemoryScope.CUSTOM_TYPE: return MemoryScope.MODULE;
+             default: return MemoryScope.ROOT;
+         }
+     }
+
+     public MemoryScope GetActiveMemoryScope()
+     {
+         return this.ActiveMemoryScope;
+     }
+
+     public ISymbolTable CreateFreshProcedureContext()
+     {
+         procedureScope = new SymbolTable(MemoryScope.PROCEDURE);
+         return procedureScope;
+     }
+
+     public ISymbolTable CreateCustomTypeContext()
+     {
+         customScope = new SymbolTable(MemoryScope.CUSTOM_TYPE);
+         return customScope;
+     }
+
+     public ISymbolTableEntry EnterActive(string name)
+     {
+         var entry = new SymbolTableEntry(name);
+         GetSymbolTable(ActiveMemoryScope)?.Entries.ToList().Add(entry);
+         return entry;
+     }
+
+     public ISymbolTableEntry Lookup(string name)
+     {
+         MemoryScope scope = ActiveMemoryScope;
+         ISymbolTableEntry result = null;
+         while (result == null && scope != MemoryScope.ROOT)
+         {
+             result = LookupInScope(scope, name);
+             scope = GetParentScope(scope);
+         }
+         if (result == null) result = LookupInScope(scope, name);
+         return result;
+     }
+
+     public ISymbolTableEntry LookupInScope(MemoryScope scope, string name)
+     {
+         return GetSymbolTable(scope)?.Entries.ToList().Find(entry => entry.Name == name);
+     }
+
+     public ISymbolTable GetMemoryContext(MemoryScope memoryScope)
+     {
+         return GetSymbolTable(memoryScope);
+     }
+ }
