@@ -1,0 +1,188 @@
+using System.Linq;
+using Xunit;
+
+public class SymbolTableTests
+{
+    [Fact]
+    public void Enter_ShouldAddEntryToSymbolTable()
+    {
+        // Arrange
+        var symbolTable = new SymbolTable(MemoryScope.GLOBAL);
+
+        // Act
+        var entry = symbolTable.Enter("variable");
+
+        // Assert
+        Assert.NotNull(entry);
+        Assert.Equal("variable", entry.Name);
+        Assert.Single(symbolTable.Entries);
+        Assert.Equal(entry, symbolTable.Lookup("variable"));
+    }
+
+    [Fact]
+    public void Lookup_ShouldReturnNullForNonexistentEntry()
+    {
+        // Arrange
+        var symbolTable = new SymbolTable(MemoryScope.GLOBAL);
+
+        // Act
+        var entry = symbolTable.Lookup("nonexistent");
+
+        // Assert
+        Assert.Null(entry);
+    }
+}
+
+public class SymbolTableScopeResolverTests
+{
+    [Fact]
+    public void CreateFreshProcedureContext_ShouldCreateNewProcedureScope()
+    {
+        // Arrange
+        var resolver = new SymbolTableScopeResolver();
+
+        // Act
+        var procedureScope = resolver.CreateFreshProcedureContext();
+
+        // Assert
+        Assert.NotNull(procedureScope);
+        Assert.Equal(MemoryScope.PROCEDURE, procedureScope.Scope);
+        Assert.Equal(procedureScope, resolver.GetMemoryContext(MemoryScope.PROCEDURE));
+    }
+
+    [Fact]
+    public void CreateCustomTypeContext_ShouldCreateNewCustomTypeScope()
+    {
+        // Arrange
+        var resolver = new SymbolTableScopeResolver();
+
+        // Act
+        var customTypeScope = resolver.CreateCustomTypeContext();
+
+        // Assert
+        Assert.NotNull(customTypeScope);
+        Assert.Equal(MemoryScope.CUSTOM_TYPE, customTypeScope.Scope);
+        Assert.Equal(customTypeScope, resolver.GetMemoryContext(MemoryScope.CUSTOM_TYPE));
+    }
+
+    [Fact]
+    public void SetModuleName_ShouldSetModuleName()
+    {
+        // Arrange
+        var resolver = new SymbolTableScopeResolver();
+
+        // Act
+        resolver.SetModuleName("Module1");
+
+        // Assert
+        Assert.Equal("Module1", resolver.ModuleId);
+    }
+
+    [Fact]
+    public void UseMemoryContext_ShouldSetActiveMemoryScope()
+    {
+        // Arrange
+        var resolver = new SymbolTableScopeResolver();
+
+        // Act
+        resolver.UseMemoryContext(MemoryScope.GLOBAL);
+
+        // Assert
+        Assert.Equal(MemoryScope.GLOBAL, resolver.GetActiveMemoryScope());
+    }
+
+    [Fact]
+    public void EnterActive_ShouldAddEntryToActiveMemoryScope()
+    {
+        // Arrange
+        var resolver = new SymbolTableScopeResolver();
+        resolver.UseMemoryContext(MemoryScope.GLOBAL);
+
+        // Act
+        var entry = resolver.EnterActive("variable");
+
+        // Assert
+        Assert.NotNull(entry);
+        Assert.Equal("variable", entry.Name);
+        Assert.Single(resolver.GetMemoryContext(MemoryScope.GLOBAL).Entries);
+        Assert.Equal(entry, resolver.Lookup("variable"));
+    }
+
+    [Fact]
+    public void Lookup_ShouldFindEntryInParentScope()
+    {
+        // Arrange
+        var resolver = new SymbolTableScopeResolver();
+        resolver.UseMemoryContext(MemoryScope.PROCEDURE);
+
+        // Create a symbol in the GLOBAL scope
+        var globalSymbol = resolver.EnterActive("globalVar");
+
+        // Act
+        var foundSymbol = resolver.Lookup("globalVar");
+
+        // Assert
+        Assert.NotNull(foundSymbol);
+        Assert.Equal(globalSymbol, foundSymbol);
+    }
+
+    [Fact]
+    public void Lookup_ShouldReturnNullForNonexistentEntry()
+    {
+        // Arrange
+        var resolver = new SymbolTableScopeResolver();
+        resolver.UseMemoryContext(MemoryScope.PROCEDURE);
+
+        // Act
+        var entry = resolver.Lookup("nonexistent");
+
+        // Assert
+        Assert.Null(entry);
+    }
+
+    [Fact]
+    public void LookupInScope_ShouldFindEntryInSpecifiedScope()
+    {
+        // Arrange
+        var resolver = new SymbolTableScopeResolver();
+        resolver.UseMemoryContext(MemoryScope.MODULE);
+
+        // Create a symbol in the MODULE scope
+        var moduleSymbol = resolver.EnterActive("moduleVar");
+
+        // Act
+        var foundSymbol = resolver.LookupInScope(MemoryScope.MODULE, "moduleVar");
+
+        // Assert
+        Assert.NotNull(foundSymbol);
+        Assert.Equal(moduleSymbol, foundSymbol);
+    }
+
+    [Fact]
+    public void LookupInScope_ShouldReturnNullForNonexistentEntryInSpecifiedScope()
+    {
+        // Arrange
+        var resolver = new SymbolTableScopeResolver();
+        resolver.UseMemoryContext(MemoryScope.MODULE);
+
+        // Act
+        var entry = resolver.LookupInScope(MemoryScope.MODULE, "nonexistent");
+
+        // Assert
+        Assert.Null(entry);
+    }
+
+    [Fact]
+    public void GetMemoryContext_ShouldReturnSymbolTableForSpecifiedScope()
+    {
+        // Arrange
+        var resolver = new SymbolTableScopeResolver();
+
+        // Act
+        var globalScope = resolver.GetMemoryContext(MemoryScope.GLOBAL);
+
+        // Assert
+        Assert.NotNull(globalScope);
+        Assert.Equal(MemoryScope.GLOBAL, globalScope.Scope);
+    }
+}
