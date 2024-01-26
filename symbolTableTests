@@ -380,3 +380,71 @@ public class SymbolTableScopeResolverTests
     }
 }
 
+public class SymbolTableEntryTests
+{
+    [Fact]
+    public void Constructor_ShouldInitializeProperties()
+    {
+        // Act
+        var entry = new SymbolTableEntry("variable");
+
+        // Assert
+        Assert.Equal("variable", entry.Name);
+        Assert.NotNull(entry.LineNumbers);
+        Assert.Empty(entry.LineNumbers);
+    }
+
+    [Fact]
+    public void AppendLineNumber_ShouldAddLineNumber()
+    {
+        // Arrange
+        var entry = new SymbolTableEntry("variable");
+
+        // Act
+        entry.AppendLineNumber(10);
+
+        // Assert
+        Assert.Contains(10, entry.LineNumbers);
+    }
+
+    [Fact]
+    public void AppendLineNumber_ShouldNotAddDuplicateLineNumbers()
+    {
+        // Arrange
+        var entry = new SymbolTableEntry("variable");
+
+        // Act
+        entry.AppendLineNumber(10);
+        entry.AppendLineNumber(10);
+
+        // Assert
+        Assert.Single(entry.LineNumbers);
+    }
+
+    [Fact]
+    public void Properties_ShouldBeSetCorrectly()
+    {
+        // Arrange
+        var entry = new SymbolTableEntry("variable");
+
+        // Act
+        entry.Definition = Definition.VARIABLE;
+        entry.TypeSpec = new SomeTypeSpec();
+        entry.Properties = new SomePropertiesSet();
+
+        // Assert
+        Assert.Equal(Definition.VARIABLE, entry.Definition);
+        Assert.NotNull(entry.TypeSpec);
+        Assert.NotNull(entry.Properties);
+    }
+
+    private class SomeTypeSpec : ITypeSpec
+    {
+        // Implement ITypeSpec as needed
+    }
+
+    private class SomePropertiesSet : IPropertiesSet
+    {
+        // Implement IPropertiesSet as needed
+    }
+}
