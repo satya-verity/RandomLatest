@@ -589,3 +589,77 @@ namespace YourNamespace.Tests
         }
     }
 }
+
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using System.Xml;
+using System.Xml.Linq;
+using Moq;
+using Xunit;
+
+namespace YourNamespace.Tests
+{
+    public class AstToXmlConverterTests
+    {
+        [Fact]
+        public void ConvertToXml_AstWithSpecificStructure_CreatesMatchingXmlString()
+        {
+            // Arrange
+            var astFactory = new AstFactory();
+
+            var integerConstantNode = astFactory.CreateNode(AstNodeTypes.INTEGER_CONSTANT);
+            integerConstantNode.Properties = new AstNodeProperties(1, null, null, null);
+            integerConstantNode.TypeSpec = new TypeSpec(TypeForm.SCALAR, null, null, null);
+
+            var variableNode = astFactory.CreateNode(AstNodeTypes.VARIABLE);
+            variableNode.Properties = new AstNodeProperties(4, null, null, null);
+            variableNode.TypeSpec = new TypeSpec(TypeForm.SCALAR, null, null, null);
+            variableNode.AddChild(astFactory.CreateNode(AstNodeTypes.SUBSCRIPTS, integerConstantNode));
+
+            var realConstantNode = astFactory.CreateNode(AstNodeTypes.REAL_CONSTANT);
+            realConstantNode.Properties = new AstNodeProperties(1, null, null, null);
+            realConstantNode.TypeSpec = new TypeSpec(TypeForm.SCALAR, null, null, null);
+
+            var convertNode = astFactory.CreateNode(AstNodeTypes.CONVERT);
+            convertNode.Properties = new AstNodeProperties(4, null, null, null);
+            convertNode.TypeSpec = new TypeSpec(TypeForm.SCALAR, null, null, null);
+            convertNode.AddChild(realConstantNode);
+
+            var assignNode = astFactory.CreateNode(AstNodeTypes.ASSIGN);
+            assignNode.Properties = new AstNodeProperties(4, null, null, null);
+            assignNode.TypeSpec = new TypeSpec(TypeForm.SCALAR, null, null, null);
+            assignNode.AddChild(variableNode);
+            assignNode.AddChild(convertNode);
+
+            var programNode = astFactory.CreateNode(AstNodeTypes.PROGRAM);
+            programNode.Properties = new AstNodeProperties(1, null, null, "QuickBasicProgram");
+            programNode.TypeSpec = new TypeSpec(TypeForm.SCALAR, null, null, null);
+            programNode.AddChild(assignNode);
+
+            var ast = astFactory.CreateAst(programNode);
+
+            var converter = new AstToXmlConverter();
+
+            // Act
+            var result = converter.ConvertToXml(ast);
+
+            // Assert
+            var expectedXml = "<PROGRAM id=\"QuickBasicProgram\" scope=\"MODULE\" line=\"1\">" +
+                                "<ASSIGN line=\"4\" type_id=\"double\">" +
+                                    "<VARIABLE id=\"A\" scope=\"PROCEDURE\" type_id=\"double\">" +
+                                        "<SUBSCRIPTS type_id=\"double\">" +
+                                            "<INTEGER_CONSTANT value=\"1\" type_id=\"integer\" />" +
+                                        "</SUBSCRIPTS>" +
+                                    "</VARIABLE>" +
+                                    "<CONVERT type_id=\"double\">" +
+                                        "<REAL_CONSTANT value=\"3.14\" type_id=\"single\" />" +
+                                    "</CONVERT>" +
+                                "</ASSIGN>" +
+                              "</PROGRAM>";
+
+            Assert.Equal(expectedXml, result);
+        }
+    }
+}
+
