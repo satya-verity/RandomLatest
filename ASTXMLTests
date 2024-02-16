@@ -469,3 +469,123 @@ namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.Tests
         }
     }
 }
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using System.Xml;
+using System.Xml.Linq;
+using Moq;
+using Xunit;
+
+namespace YourNamespace.Tests
+{
+    public class AstToXmlConverterTests
+    {
+        [Fact]
+        public void ConvertToXml_NullAst_ReturnsEmptyString()
+        {
+            var converter = new AstToXmlConverter();
+            var result = converter.ConvertToXml(null);
+
+            Assert.Equal(string.Empty, result);
+        }
+
+        [Fact]
+        public void ConvertToXml_AstWithNullRoot_ReturnsEmptyString()
+        {
+            var mockAst = new Mock<IAst>();
+            mockAst.SetupGet(a => a.Root).Returns((IAstNode)null);
+
+            var converter = new AstToXmlConverter();
+            var result = converter.ConvertToXml(mockAst.Object);
+
+            Assert.Equal(string.Empty, result);
+        }
+
+        [Fact]
+        public void ConvertToXml_AstWithRoot_CreatesXmlString()
+        {
+            // Arrange
+            var astFactory = new AstFactory();
+            var nodeFactory = new AstNodeFactory();
+            var ast = astFactory.CreateAst(
+                astFactory.CreateNode(
+                    AstNodeTypes.PROGRAM,
+                    null,
+                    null,
+                    new AstNodeProperties(1, null, null, null)
+                )
+            );
+
+            var childNode = nodeFactory.CreateNode(
+                AstNodeTypes.ASSIGN,
+                null,
+                null,
+                new AstNodeProperties(4, null, null, null)
+            );
+
+            var variableNode = nodeFactory.CreateNode(
+                AstNodeTypes.VARIABLE,
+                childNode,
+                null,
+                new AstNodeProperties(1, new SymbolTableEntry("A", null), null, null)
+            );
+
+            var subscriptsNode = nodeFactory.CreateNode(
+                AstNodeTypes.SUBSCRIPTS,
+                variableNode,
+                null,
+                new AstNodeProperties(1, null, null, null)
+            );
+
+            var integerConstantNode = nodeFactory.CreateNode(
+                AstNodeTypes.INTEGER_CONSTANT,
+                subscriptsNode,
+                null,
+                new AstNodeProperties(1, null, null, null)
+            );
+
+            var convertNode = nodeFactory.CreateNode(
+                AstNodeTypes.CONVERT,
+                childNode,
+                null,
+                new AstNodeProperties(1, null, null, null)
+            );
+
+            var realConstantNode = nodeFactory.CreateNode(
+                AstNodeTypes.REAL_CONSTANT,
+                convertNode,
+                null,
+                new AstNodeProperties(1, null, null, null)
+            );
+
+            childNode.AddChild(variableNode);
+            variableNode.AddChild(subscriptsNode);
+            subscriptsNode.AddChild(integerConstantNode);
+            childNode.AddChild(convertNode);
+            convertNode.AddChild(realConstantNode);
+            ast.Root.AddChild(childNode);
+
+            var converter = new AstToXmlConverter();
+
+            // Act
+            var result = converter.ConvertToXml(ast);
+
+            // Assert
+            var expectedXml = "<PROGRAM id=\"QuickBasicProgram\" scope=\"MODULE\" line=\"1\">" +
+                              "<ASSIGN line=\"4\" type_id=\"double\">" +
+                              "<VARIABLE id=\"A\" scope=\"PROCEDURE\" type_id=\"double\">" +
+                              "<SUBSCRIPTS type_id=\"double\">" +
+                              "<INTEGER_CONSTANT value=\"1\" type_id=\"integer\" />" +
+                              "</SUBSCRIPTS>" +
+                              "</VARIABLE>" +
+                              "<CONVERT type_id=\"double\">" +
+                              "<REAL_CONSTANT value=\"3.14\" type_id=\"single\" />" +
+                              "</CONVERT>" +
+                              "</ASSIGN>" +
+                              "</PROGRAM>";
+
+            Assert.Equal(expectedXml, result);
+        }
+    }
+}
