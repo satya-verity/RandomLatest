@@ -773,3 +773,37 @@ namespace YourNamespace.Tests
     }
 }
 
+// Arrange
+var astNodePropertiesMock = new Mock<AstNodeProperties>();
+astNodePropertiesMock.SetupAllProperties(); // Use SetupAllProperties to handle properties without a parameterless constructor
+
+// Set up properties using the mock
+astNodePropertiesMock.Object.Id = new SymbolTableEntry("A", null);
+astNodePropertiesMock.Object.Value = new SymbolTableEntry("3.14", null);
+astNodePropertiesMock.Object.Line = 4;
+
+var typeSpecMock = new Mock<ITypeSpec>();
+var astNodeMock = new Mock<IAstNode>();
+
+// Set up AstNode with properties and typespec
+astNodeMock.Setup(n => n.TypeSpec).Returns(typeSpecMock.Object);
+astNodeMock.Setup(n => n.Properties).Returns(astNodePropertiesMock.Object);
+astNodeMock.Setup(n => n.Children).Returns(new List<IAstNode>());
+
+var astMock = new Mock<IAst>();
+astMock.Setup(a => a.Root).Returns(astNodeMock.Object);
+
+var astFactoryMock = new Mock<AstFactory>();
+astFactoryMock.Setup(f => f.CreateAst(It.IsAny<IAstNode>())).Returns(astMock.Object);
+astFactoryMock.Setup(f => f.CreateNode(It.IsAny<AstNodeType>(), It.IsAny<IAstNode>(), It.IsAny<ITypeSpec>(), It.IsAny<AstNodeProperties>()))
+    .Returns(astNodeMock.Object);
+
+var astToXmlConverter = new AstToXmlConverter(astFactoryMock.Object);
+
+// Act
+var resultXml = astToXmlConverter.ConvertToXml(astMock.Object);
+
+// Assert
+// Add assertions based on the expected XML structure
+// You may use XML comparison libraries or check specific parts of the XML
+
