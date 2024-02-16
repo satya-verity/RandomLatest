@@ -1,403 +1,688 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
-public enum Definition
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.TypeProperties
 {
-    CONSTANT,
-    ENUMERATION_CONSTANT,
-    TYPE,
-    VARIABLE,
-    FIELD,
-    VALUE_PARAM,
-    VAR_PARAM,
-    PROGRAM_PARAM,
-    PROGRAM,
-    PROCEDURE,
-    FUNCTION,
-    UNDEFINED
-}
-
-public interface IPropertiesSet { }
-
-public abstract class SymTabEntryProperties : IPropertiesSet { }
-
-public class ConstantProperties : SymTabEntryProperties { }
-
-public class ProcedureProperties : SymTabEntryProperties { }
-
-public class VariableProperties : SymTabEntryProperties { }
-
-public interface ITypeSpec { }
-
-public interface ISymTabEntry
-{
-    string Name { get; set; }
-    ISymTab SymTab { get; set; }
-    Definition Definition { get; set; }
-    ITypeSpec TypeSpec { get; set; }
-    List<int> LineNumbers { get; set; }
-    IPropertiesSet Properties { get; set; }
-
-    void AppendLineNumber(int lineNumber);
-}
-
-public class SymTabEntry : ISymTabEntry
-{
-    public string Name { get; set; }
-    public ISymTab SymTab { get; set; }
-    public Definition Definition { get; set; }
-    public ITypeSpec TypeSpec { get; set; }
-    public List<int> LineNumbers { get; set; }
-    public IPropertiesSet Properties { get; set; }
-
-    public SymTabEntry(string name, ISymTab symTab, Definition definition, ITypeSpec typeSpec)
+    public class ArrayTypeProperties : TypeSpecProperties
     {
-        Name = name;
-        SymTab = symTab;
-        Definition = definition;
-        TypeSpec = typeSpec;
-        LineNumbers = new List<int>();
-        Properties = null; // You can set specific properties based on the definition
-    }
+        public int Size { get; }
+        public ValueElementType ElementType { get; }
 
-    public void AppendLineNumber(int lineNumber)
-    {
-        LineNumbers.Add(lineNumber);
+        public ArrayTypeProperties(int size, ValueElementType elementType)
+        {
+            Size = size;
+            ElementType = elementType;
+        }     
     }
 }
-
-public enum MemoryScope
-{
-    ROOT,
-    GLOBAL,
-    MODULE,
-    CUSTOM_TYPE,
-    PROCEDURE
-}
-
-public interface ISymTab
-{
-    MemoryScope Scope { get; set; }
-    int NestingLevel { get; set; }
-    List<ISymTabEntry> Entries { get; set; }
-
-    ISymTabEntry Enter(string name);
-    ISymTabEntry Lookup(string name);
-}
-
-public class SymTab : ISymTab
-{
-    public MemoryScope Scope { get; set; }
-    public int NestingLevel { get; set; }
-    public List<ISymTabEntry> Entries { get; set; }
-
-    public SymTab(MemoryScope scope, int nestingLevel)
-    {
-        Scope = scope;
-        NestingLevel = nestingLevel;
-        Entries = new List<ISymTabEntry>();
-    }
-
-    public ISymTabEntry Enter(string name)
-    {
-        // Implement entry creation and insertion logic
-        var entry = new SymTabEntry(name, this, Definition.UNDEFINED, null);
-        Entries.Add(entry);
-        return entry;
-    }
-
-    public ISymTabEntry Lookup(string name)
-    {
-        // Implement entry lookup logic
-        return Entries.Find(e => e.Name == name);
-    }
-}
-
-public interface ISymTabScopeResolver
-{
-    string ModuleId { get; set; }
-
-    void SetModuleName(string moduleName);
-    void UseMemoryContext(MemoryScope memoryScope);
-    MemoryScope GetActiveMemoryScope();
-    void CreateFreshProcedureContext();
-    void CreateCustomTypeContext();
-    ISymTabEntry EnterActive(string name);
-    ISymTabEntry Lookup(string name);
-    ISymTabEntry LookupInScope(string name);
-    ISymTab GetMemoryContext(MemoryScope memoryScope);
-}
-
-public class SymTabScopeResolver : ISymTabScopeResolver
-{
-    public string ModuleId { get; set; }
-    private MemoryScope activeMemoryScope;
-
-    public void SetModuleName(string moduleName)
-    {
-        ModuleId = moduleName;
-    }
-
-    public void UseMemoryContext(MemoryScope memoryScope)
-    {
-        activeMemoryScope = memoryScope;
-    }
-
-    public MemoryScope GetActiveMemoryScope()
-    {
-        return activeMemoryScope;
-    }
-
-    public void CreateFreshProcedureContext()
-    {
-        // Implement logic to create a new memory scope for a procedure
-    }
-
-    public void CreateCustomTypeContext()
-    {
-        // Implement logic to create a new memory scope for a user-defined type
-    }
-
-    public ISymTabEntry EnterActive(string name)
-    {
-        // Implement entry creation and insertion logic in the active memory scope
-        return null;
-    }
-
-    public ISymTabEntry Lookup(string name)
-    {
-        // Implement entry lookup logic in all memory scopes starting from the active one
-        return null;
-    }
-
-    public ISymTabEntry LookupInScope(string name)
-    {
-        // Implement entry lookup logic in the specified memory scope
-        return null;
-    }
-
-    public ISymTab GetMemoryContext(MemoryScope memoryScope)
-    {
-        // Implement logic to return the memory context for the specified scope
-        return null;
-    }
-}
-
-public class SymTabToXmlConverter
-{
-    // Implement methods for converting ISymTabScopeResolver, ISymTab, and ISymTabEntry to XML
-}
-
-class Program
-{
-    static void Main()
-    {
-        // Sample usage of the implemented classes
-        ISymTab symTab = new SymTab(MemoryScope.GLOBAL, 0);
-        ISymTabEntry entry = symTab.Enter("variable1");
-
-        entry.AppendLineNumber(10);
-        entry.AppendLineNumber(15);
-
-        Console.WriteLine($"Symbol: {entry.Name}, Definition: {entry.Definition}, Type: {entry.TypeSpec}, Line Numbers: {string.Join(", ", entry.LineNumbers)}");
-    }
-}
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-public enum MemoryScope
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer
 {
-    ROOT,
-    GLOBAL,
-    MODULE,
-    PROCEDURE,
-    CUSTOM_TYPE
-}
-
-public interface ISymTabEntry
-{
-    string Name { get; }
-    string Type { get; set; }
-}
-
-public interface ISymTab
-{
-    MemoryScope Scope { get; }
-    List<ISymTabEntry> Entries { get; }
-}
-
-public interface ISymTabScopeResolver
-{
-    MemoryScope ActiveMemoryScope { get; }
-    void SetModuleName(string moduleName);
-    void UseMemoryContext(MemoryScope memoryScope);
-    ISymTabEntry EnterSymbol(string name, string type);
-    ISymTabEntry LookupSymbol(string name);
-    ISymTab GetMemoryContext();
-}
-
-public class SymTabEntry : ISymTabEntry
-{
-    public string Name { get; }
-    public string Type { get; set; }
-
-    public SymTabEntry(string name, string type)
+    public abstract class TypeSpecProperties
     {
-        Name = name;
-        Type = type;
+        // Common properties for type specifications
     }
 }
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-public class SymTab : ISymTab
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer
 {
-    public MemoryScope Scope { get; }
-    public List<ISymTabEntry> Entries { get; }
-
-    public SymTab(MemoryScope scope)
+    public interface ITypeSpec
     {
-        Scope = scope;
-        Entries = new List<ISymTabEntry>();
+        TypeForm Form { get; }
+        ISymbolTableEntry Identifier { get; }
+        ITypeSpec BaseType { get; }
+        TypeSpecProperties Properties { get; }
     }
 }
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer.OMLSymbolTable;
 
-public class SymTabScopeResolver : ISymTabScopeResolver
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer
 {
-    public MemoryScope ActiveMemoryScope { get; private set; }
-    private string moduleId;
-    private SymTab rootScope;
-    private SymTab currentScope;
-
-    public SymTabScopeResolver()
+    public interface ISymbolTableScopeResolver
     {
-        ActiveMemoryScope = MemoryScope.ROOT;
-        rootScope = new SymTab(MemoryScope.ROOT);
-        currentScope = rootScope;
-        InitializeHierarchy();
+        string ModuleId { get; }
+        void SetModuleName(string moduleName);
+        void UseMemoryContext(MemoryScope memoryScope);
+        MemoryScope GetActiveMemoryScope();
+        ISymbolTable CreateFreshProcedureContext();
+        ISymbolTable CreateCustomTypeContext();
+        ISymbolTableEntry EnterActive(string name);
+        ISymbolTableEntry Lookup(string name);
+        ISymbolTableEntry LookupInScope(MemoryScope scope, string name);
+        ISymbolTable GetMemoryContext(MemoryScope memoryScope);
     }
+}
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer.OMLSymbolTable;
+using System.Collections.Generic;
 
-    private void InitializeHierarchy()
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer
+{
+    public interface ISymbolTableEntry
     {
-        var globalScope = AddChildScope(MemoryScope.GLOBAL);
-        AddChildScope(MemoryScope.MODULE);
-        AddChildScope(MemoryScope.PROCEDURE);
-        AddChildScope(MemoryScope.CUSTOM_TYPE);
+        string Name { get; }
+        ISymbolTable SymbolTable { get; }
+        Definition Definition { get; set; }
+        ITypeSpec TypeSpec { get; set; }
+        IEnumerable<int> LineNumbers { get; }
+        IPropertiesSet Properties { get; set; }
 
-        // Add link from MODULE to GLOBAL
-        globalScope.Entries.Add(new SymTabEntry("MODULE_TO_GLOBAL", "LINK"));
+        void AppendLineNumber(int lineNumber);
     }
+}
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer.OMLSymbolTable;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-    private SymTab AddChildScope(MemoryScope scope)
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer
+{
+    public interface ISymbolTable
     {
-        var childScope = new SymTab(scope);
-        currentScope.Entries.Add(new SymTabEntry($"{currentScope.Scope}_TO_{scope}", "LINK"));
-        currentScope = childScope;
-        return childScope;
+        MemoryScope Scope { get; }
+        int NestingLevel { get; set; }
+        IEnumerable<ISymbolTableEntry> Entries { get;}
+
+        ISymbolTableEntry Enter(string name);
+        ISymbolTableEntry Lookup(string name);
     }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-    public void SetModuleName(string moduleName)
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer
+{
+    public interface IPropertiesSet
     {
-        moduleId = moduleName;
     }
+}
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder;
+using System.Collections.Generic;
 
-    public void UseMemoryContext(MemoryScope memoryScope)
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer
+{
+    public interface IAstNode
     {
-        ActiveMemoryScope = memoryScope;
-        currentScope = FindScope(rootScope, memoryScope);
+        AstNodeType Type { get; }
+        IAstNode Parent { get; set; }
+        IEnumerable<IAstNode> Children { get; }
+        ITypeSpec TypeSpec { get; set; }
+        AstNodeProperties Properties { get; set; }
+
+        void AddChild(IAstNode child);
     }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-    private SymTab FindScope(SymTab scope, MemoryScope targetScope)
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer
+{
+    public interface IAst
     {
-        if (scope.Scope == targetScope)
-            return scope;
+        IAstNode Root { get; }
+    }
+}
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-        foreach (var entry in scope.Entries)
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer
+{
+    public class AstFactory
+    {
+        public IAst CreateAst(IAstNode root)
         {
-            if (entry.Type == "LINK")
-            {
-                var linkedScope = FindScope(currentScope, targetScope);
-                if (linkedScope != null)
-                    return linkedScope;
-            }
+            if (root == null) throw new ArgumentNullException("root");
+            if (root.Parent != null) throw new ArgumentException("The parent of the root node should be null");
+            return new Ast { Root = root };
         }
 
-        return null;
+        public IAstNode CreateNode(AstNodeType type)
+        {
+            return new AstNode(type);
+        }
     }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-    public ISymTabEntry EnterSymbol(string name, string type)
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.OMLSymbolTable
+{
+    public class VariableProperties: SymbolTableEntryProperties
     {
-        var entry = new SymTabEntry(name, type);
-        currentScope.Entries.Add(entry);
-        return entry;
     }
+}
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer.OMLSymbolTable;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-    public ISymTabEntry LookupSymbol(string name)
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.OMLSymbolTable
+{
+    public class SymbolTableScopeResolver : ISymbolTableScopeResolver
     {
-        var result = LookupSymbolInScope(currentScope, name);
-        if (result != null)
+        public MemoryScope ActiveMemoryScope { get; private set; }
+        public string ModuleId { set; get; }
+        private Dictionary<MemoryScope, SymbolTable> symbolTables;
+        private Dictionary<MemoryScope, MemoryScope> parentScopes;
+
+
+        public SymbolTableScopeResolver()
+        {
+            InitializeScopes();
+            parentScopes = new Dictionary<MemoryScope, MemoryScope>
+            {
+                { MemoryScope.GLOBAL, MemoryScope.ROOT },
+                { MemoryScope.MODULE, MemoryScope.GLOBAL },
+                { MemoryScope.PROCEDURE,  MemoryScope.MODULE },
+                { MemoryScope.CUSTOM_TYPE,  MemoryScope.MODULE },
+                { MemoryScope.ROOT, MemoryScope.UNDEFINED }
+            };
+        }
+
+        private void InitializeScopes()
+        {
+            symbolTables = new Dictionary<MemoryScope, SymbolTable>
+            {
+                { MemoryScope.ROOT, new SymbolTable(MemoryScope.ROOT) },
+                { MemoryScope.GLOBAL, new SymbolTable(MemoryScope.GLOBAL) },
+                { MemoryScope.MODULE, new SymbolTable(MemoryScope.MODULE) }
+            };
+        }
+
+        public void SetModuleName(string moduleName)
+        {
+            this.ModuleId = moduleName;
+        }
+
+        public void UseMemoryContext(MemoryScope memoryScope)
+        {
+            this.ActiveMemoryScope = memoryScope;
+        }
+
+        private MemoryScope GetParentScope(MemoryScope memoryScope)
+        {
+            return parentScopes[memoryScope];
+        }
+
+        public MemoryScope GetActiveMemoryScope()
+        {
+            return this.ActiveMemoryScope;
+        }
+
+        public ISymbolTable CreateFreshProcedureContext()
+        {
+            var procedureScope = new SymbolTable(MemoryScope.PROCEDURE);
+            this.symbolTables.Add(MemoryScope.PROCEDURE, procedureScope);
+            return procedureScope;
+        }
+
+        public ISymbolTable CreateCustomTypeContext()
+        {
+            var customScope = new SymbolTable(MemoryScope.CUSTOM_TYPE);
+            this.symbolTables.Add(MemoryScope.CUSTOM_TYPE, customScope);
+            return customScope;
+        }
+
+        public ISymbolTableEntry EnterActive(string name)
+        {
+            SymbolTable symbolTable;
+            symbolTables.TryGetValue(ActiveMemoryScope, out symbolTable);
+            if (symbolTable == null) throw new InvalidOperationException($"Symbol table does not exist for scope {ActiveMemoryScope}");
+            return symbolTable.Enter(name);
+        }
+
+        public ISymbolTableEntry Lookup(string name)
+        {
+            MemoryScope scope = ActiveMemoryScope;
+            ISymbolTableEntry result = null;
+            while (result == null && scope != MemoryScope.UNDEFINED)
+            {
+                result = LookupInScope(scope, name);
+                scope = GetParentScope(scope);
+            }
             return result;
-
-        return LookupSymbolInParentScopes(rootScope, name);
-    }
-
-    private ISymTabEntry LookupSymbolInScope(SymTab scope, string name)
-    {
-        return scope.Entries.Find(entry => entry.Name == name);
-    }
-
-    private ISymTabEntry LookupSymbolInParentScopes(SymTab scope, string name)
-    {
-        foreach (var entry in scope.Entries)
-        {
-            if (entry.Type == "LINK")
-            {
-                var linkedScope = FindScope(scope, ActiveMemoryScope);
-                if (linkedScope != null)
-                {
-                    var result = LookupSymbolInScope(linkedScope, name);
-                    if (result != null)
-                        return result;
-                }
-            }
         }
 
-        return null;
-    }
+        public ISymbolTableEntry LookupInScope(MemoryScope scope, string name)
+        {
+            SymbolTable symbolTable;
+            symbolTables.TryGetValue(scope, out symbolTable);
+            return symbolTable?.Lookup(name);
+        }
 
-    public ISymTab GetMemoryContext()
-    {
-        return currentScope;
+        public ISymbolTable GetMemoryContext(MemoryScope memoryScope)
+        {
+            return symbolTables[memoryScope];
+        }
     }
 }
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-class Program
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer
 {
-    static void Main()
+    public class SymbolTableEntryProperties: IPropertiesSet
     {
-        ISymTabScopeResolver symTabScopeResolver = new SymTabScopeResolver();
-        symTabScopeResolver.SetModuleName("MainModule");
+    }
+}
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-        symTabScopeResolver.UseMemoryContext(MemoryScope.GLOBAL);
-        symTabScopeResolver.EnterSymbol("globalVar", "INTEGER");
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.OMLSymbolTable
+{
+    public class SymbolTableEntry : ISymbolTableEntry
+    {
+        private List<int> lineNumbers;
+        public string Name { get; }
+        public ISymbolTable SymbolTable { get; }
+        public Definition Definition { get; set; }
+        public ITypeSpec TypeSpec { get; set; }
+        public IEnumerable<int> LineNumbers { get => lineNumbers; }
+        public IPropertiesSet Properties { get; set; }
 
-        symTabScopeResolver.UseMemoryContext(MemoryScope.MODULE);
-        symTabScopeResolver.EnterSymbol("moduleVar", "REAL");
-
-        symTabScopeResolver.UseMemoryContext(MemoryScope.PROCEDURE);
-        symTabScopeResolver.EnterSymbol("localVar", "BOOLEAN");
-
-        ISymTabEntry lookupResult = symTabScopeResolver.LookupSymbol("moduleVar");
-
-        if (lookupResult != null)
+        public SymbolTableEntry(string name, ISymbolTable symbolTable)
         {
-            Console.WriteLine($"Found entry: {lookupResult.Name} with type {lookupResult.Type} in {symTabScopeResolver.ActiveMemoryScope} scope.");
+            Name = name;
+            this.SymbolTable = symbolTable;
+            this.lineNumbers = new List<int>();
         }
-        else
+
+        public void AppendLineNumber(int lineNumber)
         {
-            Console.WriteLine("Entry not found.");
+            this.lineNumbers.Add(lineNumber);
         }
     }
 }
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.OMLSymbolTable
+{
+    public class SymbolTable : ISymbolTable
+    {
+        private Dictionary<string, ISymbolTableEntry> entries;
+
+        public MemoryScope Scope { get; set; }
+        public int NestingLevel { get; set; }
+        public IEnumerable<ISymbolTableEntry> Entries { get => entries.Values.ToList(); }
+
+        public SymbolTable(MemoryScope scope)
+        {
+            this.Scope = scope;
+            this.entries = new Dictionary<string,ISymbolTableEntry>();
+        }
+
+        public SymbolTable(MemoryScope scope, int nestingLevel): this(scope)
+        {
+            this.NestingLevel = nestingLevel;          
+        }     
+
+        public ISymbolTableEntry Enter(string name)
+        {
+            var entry = this.Lookup(name);
+            if (entry == null)
+            {
+                entry = new SymbolTableEntry(name, this);
+                this.entries.Add(name, entry);
+            }
+            return entry;
+        }
+
+        public ISymbolTableEntry Lookup(string name)
+        {
+            ISymbolTableEntry entry;
+            return this.entries.TryGetValue(name, out entry) ? entry : null;
+        }
+    }
+}
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.OMLSymbolTable
+{
+    public class ProcedureProperties: SymbolTableEntryProperties
+    {
+        ISymbolTable ProcedureSymbolTable { get; set; }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.OMLSymbolTable
+{
+    public enum MemoryScope
+    {
+        ROOT,
+        GLOBAL,
+        MODULE,
+        CUSTOM_TYPE,
+        PROCEDURE,
+        UNDEFINED
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.OMLSymbolTable
+{
+   public enum Definition
+    {
+        CONSTANT,
+        ENUMERATION_CONSTANT,
+        TYPE,
+        VARIABLE,
+        FIELD,
+        VALUE_PARAM,
+        VAR_PARAM,
+        PROGRAM_PARAM,
+        PROGRAM,
+        PROCEDURE,
+        FUNCTION,
+        UNDEFINED
+    }
+}
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.OMLSymbolTable
+{
+    public class ConstantProperties: SymbolTableEntryProperties
+    {
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder
+{
+    public enum ValueElementType
+    {
+        INTEGER,
+        REAL,
+        STRING,
+        BOOLEAN
+    }
+}
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder
+{
+    public class TypeSpec : ITypeSpec
+    {
+       
+        public TypeForm Form { get; }
+        public ISymbolTableEntry Identifier { get; }
+        public ITypeSpec BaseType { get; }
+        public TypeSpecProperties Properties { get; }
+
+        public TypeSpec(TypeForm form, ISymbolTableEntry identifier, ITypeSpec baseType, TypeSpecProperties properties)
+        {
+            this.Form = form;
+            this.Identifier = identifier;
+            this.BaseType = baseType;
+            this.Properties = properties;
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder
+{
+    public enum TypeForm
+    {
+        SCALAR,
+        ENUMERATION,
+        SUBRANGE,
+        ARRAY,
+        RECORD
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder
+{
+    public enum AstNodeType
+    {
+        PROGRAM,
+        PROCEDURE,
+        FUNCTION,
+        LABEL,
+        COMPOUND,
+        ASSIGN,
+        LOOP,
+        TEST,
+        CALL,
+        PARAMETERS,
+        REF_PARAM_GUARD,
+        IF,
+        ELSEIF,
+        EQ,
+        NE,
+        LT,
+        LE,
+        GT,
+        NOT,
+        AND,
+        OR,
+        ADD,
+        SUBTRACT,
+        NEGATE,
+        MULTIPLY,
+        DIVIDE,
+        INTEGER_DIVIDE,
+        FLOAT_DIVIDE,
+        MOD,
+        POW,
+        RND,
+        VARIABLE,
+        SUBSCRIPTS,
+        FIELD,
+        INTEGER_CONSTANT,
+        REAL_CONSTANT,
+        STRING_CONSTANT,
+        BOOLEAN_CONSTANT,
+        WRITE_PARM,
+        CLS,
+        RANDOMIZE_TIMER,
+        INPUT,
+        INPUT_QUESTION,
+        PRINT,
+        PRINT_ATTACHED_SEGMENT,
+        PRINT_TAB_SEGMENT
+    }
+}
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder
+{
+    public class AstNodeProperties
+    {
+        public int Line { get; }
+        public ISymbolTableEntry Id { get; }
+        public ISymbolTableEntry Value { get; }
+        public string Label { get; }
+
+        public AstNodeProperties(int line, ISymbolTableEntry id =null, ISymbolTableEntry value = null, string label = null)
+        {
+            Line = line;
+            Id = id;
+            Value = value;
+            Label = label;
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder
+{
+    // AstNode class
+    public class AstNode : IAstNode
+    {
+        private List<IAstNode> children { get; }
+
+        public AstNodeType Type { get; }
+        public IAstNode Parent { get; set; }
+        public IEnumerable<IAstNode> Children => children;
+        public ITypeSpec TypeSpec { get; set; }
+        public AstNodeProperties Properties { get; set; }
+
+        public AstNode(AstNodeType type)
+        {
+            this.Type = type;
+            this.children = new List<IAstNode>();
+        }
+
+        public void AddChild(IAstNode child)
+        {
+            if (child == null) throw new ArgumentNullException("child");
+
+            child.Parent = this;
+            this.children.Add(child);
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder
+{
+    public class Ast : IAst
+    {
+        public IAstNode Root { get; set; }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.TypeProperties
+{
+    public class SubrangeTypeProperties : TypeSpecProperties
+    {
+        public int MinRange { get; }
+        public int MaxRange { get; }
+
+        public SubrangeTypeProperties(int minRange, int maxRange)
+        {
+            MinRange = minRange;
+            MaxRange = maxRange;
+        }     
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.TypeProperties
+{
+    public class ScalarTypeProperties : TypeSpecProperties
+    {
+        public int MinRange { get; }
+        public int MaxRange { get; }
+        public bool IsSigned { get; }
+
+        public ScalarTypeProperties(int minRange, int maxRange, bool isSigned)
+        {
+            MinRange = minRange;
+            MaxRange = maxRange;
+            IsSigned = isSigned;
+        }      
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.TypeProperties
+{
+    public class RecordTypeProperties : TypeSpecProperties
+    {
+        private IEnumerable<Tuple<string, ValueElementType>> fields { get; }
+
+        public IEnumerable<Tuple<string, ValueElementType>> Fields => fields.ToList();
+        public RecordTypeProperties(IEnumerable<Tuple<string, ValueElementType>> fields)
+        {
+            this.fields = fields.ToList();
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.TypeProperties
+{
+    public class EnumerationTypeProperties : TypeSpecProperties
+    {
+        private readonly IEnumerable<string> enumerationConstants;
+        public IEnumerable<string> EnumerationConstants => enumerationConstants.ToList();
+
+        public EnumerationTypeProperties(IEnumerable<string> enumerationConstants)
+        {
+            this.enumerationConstants = enumerationConstants.ToList();
+        }      
+    }
+}
