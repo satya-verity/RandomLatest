@@ -658,6 +658,63 @@ namespace YourNamespace.Tests
                                 "</ASSIGN>" +
                               "</PROGRAM>";
 
+
+
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Xml;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder
+{
+    public class AstToXmlConverter
+    {
+        public string ConvertToXml(IAst ast)
+        {
+            StringBuilder xmlBuilder = new StringBuilder();
+            using (XmlWriter writer = XmlWriter.Create(xmlBuilder, new XmlWriterSettings { Indent = true }))
+            {
+                foreach (var child in ast.Root?.Children)
+                {
+                    ConvertNodeToXml(writer, child);
+                }
+            }
+            return xmlBuilder.ToString();
+        }
+
+        private void ConvertNodeToXml(XmlWriter writer, IAstNode node)
+        {
+            if (node == null) return;
+            writer.WriteStartElement(node.Type.ToString());
+            if (node.Properties != null)
+            {
+                if (node.Properties.Id != null)
+                {
+                    writer.WriteAttributeString("id", node.Properties.Id.Name);
+                    writer.WriteAttributeString("scope", node.Properties.Id.SymbolTable.Scope.ToString());
+                }
+                if (node.Properties.Value != null)
+                {
+                    writer.WriteAttributeString("value", node.Properties.Value.Name);
+                    writer.WriteAttributeString("line", string.Join(",", node.Properties.Value.LineNumbers));
+                }
+            }
+            if (node.TypeSpec != null)
+            {
+                writer.WriteAttributeString("type_id", node.TypeSpec.Form.ToString());
+            }
+
+            foreach (var child in node.Children)
+            {
+                ConvertNodeToXml(writer, child);
+            }
+
+            writer.WriteEndElement();
+        }
+    }
+}
+
+
             Assert.Equal(expectedXml, result);
         }
     }
