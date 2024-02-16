@@ -1,0 +1,428 @@
+using System;
+using Xunit;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.Tests
+{
+    public class AstToXmlConverterTests
+    {
+        [Fact]
+        public void ConvertToXml_WithNullAst_ShouldReturnEmptyString()
+        {
+            // Arrange
+            AstToXmlConverter converter = new AstToXmlConverter();
+
+            // Act
+            string result = converter.ConvertToXml(null);
+
+            // Assert
+            Assert.Equal(string.Empty, result);
+        }
+
+        [Fact]
+        public void ConvertToXml_WithAstContainingNodes_ShouldReturnValidXml()
+        {
+            // Arrange
+            AstToXmlConverter converter = new AstToXmlConverter();
+            IAst ast = /* create a mock IAst implementation with nodes */;
+
+            // Act
+            string result = converter.ConvertToXml(ast);
+
+            // Assert
+            // Add your assertions based on the expected XML output
+            Assert.NotEmpty(result);
+            Assert.Contains("<SomeNode>", result);
+            Assert.Contains("id=\"someId\" scope=\"someScope\"", result);
+            // Add more assertions as needed
+        }
+
+        [Fact]
+        public void ConvertNodeToXml_WithNullNode_ShouldNotThrowException()
+        {
+            // Arrange
+            AstToXmlConverter converter = new AstToXmlConverter();
+            XmlWriter writer = /* create a mock XmlWriter implementation */;
+
+            // Act and Assert
+            Assert.DoesNotThrow(() => converter.ConvertNodeToXml(writer, null));
+        }
+
+        [Fact]
+        public void ConvertNodeToXml_WithValidNode_ShouldWriteXmlAttributes()
+        {
+            // Arrange
+            AstToXmlConverter converter = new AstToXmlConverter();
+            XmlWriter writer = /* create a mock XmlWriter implementation */;
+            IAstNode node = /* create a mock IAstNode implementation with properties */;
+
+            // Act
+            converter.ConvertNodeToXml(writer, node);
+            string result = /* get the XML string from the writer */;
+
+            // Assert
+            // Add your assertions based on the expected XML output
+            Assert.Contains("<SomeNodeType id=\"someId\" scope=\"someScope\" value=\"someValue\" line=\"123\" type_id=\"someType\" />", result);
+            // Add more assertions as needed
+        }
+    }
+}
+using System;
+using System.Xml;
+using Moq;
+using Xunit;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.Tests
+{
+    public class AstToXmlConverterTests
+    {
+        [Fact]
+        public void ConvertToXml_WithNullAst_ShouldReturnEmptyString()
+        {
+            // Arrange
+            AstToXmlConverter converter = new AstToXmlConverter();
+
+            // Act
+            string result = converter.ConvertToXml(null);
+
+            // Assert
+            Assert.Equal(string.Empty, result);
+        }
+
+        [Fact]
+        public void ConvertToXml_WithAstContainingNodes_ShouldReturnValidXml()
+        {
+            // Arrange
+            AstToXmlConverter converter = new AstToXmlConverter();
+            Mock<IAst> astMock = new Mock<IAst>();
+            // Set up astMock to return nodes when accessing astMock.Object.Root.Children
+
+            // Act
+            string result = converter.ConvertToXml(astMock.Object);
+
+            // Assert
+            // Add your assertions based on the expected XML output
+            Assert.NotEmpty(result);
+            Assert.Contains("<SomeNode>", result);
+            Assert.Contains("id=\"someId\" scope=\"someScope\"", result);
+            // Add more assertions as needed
+        }
+
+        [Fact]
+        public void ConvertNodeToXml_WithNullNode_ShouldNotThrowException()
+        {
+            // Arrange
+            AstToXmlConverter converter = new AstToXmlConverter();
+            Mock<XmlWriter> writerMock = new Mock<XmlWriter>();
+
+            // Act and Assert
+            Assert.DoesNotThrow(() => converter.ConvertNodeToXml(writerMock.Object, null));
+        }
+
+        [Fact]
+        public void ConvertNodeToXml_WithValidNode_ShouldWriteXmlAttributes()
+        {
+            // Arrange
+            AstToXmlConverter converter = new AstToXmlConverter();
+            Mock<XmlWriter> writerMock = new Mock<XmlWriter>();
+            Mock<IAstNode> nodeMock = new Mock<IAstNode>();
+
+            // Set up nodeMock to return properties when accessing nodeMock.Object.Properties
+
+            // Act
+            converter.ConvertNodeToXml(writerMock.Object, nodeMock.Object);
+            string result = /* get the XML string from the writerMock.Object */;
+
+            // Assert
+            // Add your assertions based on the expected XML output
+            Assert.Contains("<SomeNodeType id=\"someId\" scope=\"someScope\" value=\"someValue\" line=\"123\" type_id=\"someType\" />", result);
+            // Add more assertions as needed
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Xml;
+using Moq;
+using Xunit;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.Tests
+{
+    public class AstToXmlConverterTests
+    {
+        [Fact]
+        public void ConvertToXml_WithAstContainingNodes_ShouldReturnValidXml()
+        {
+            // Arrange
+            AstFactory astFactory = new AstFactory();
+            AstToXmlConverter converter = new AstToXmlConverter();
+            Mock<IAstNode> rootMock = new Mock<IAstNode>();
+            rootMock.SetupGet(r => r.Type).Returns(AstNodeTypes.PROGRAM);
+            rootMock.SetupGet(r => r.Children).Returns(new List<IAstNode>
+            {
+                // Mock child nodes as needed
+            });
+            IAst ast = astFactory.CreateAst(rootMock.Object);
+
+            // Act
+            string result = converter.ConvertToXml(ast);
+
+            // Assert
+            Assert.NotEmpty(result);
+            Assert.Contains("<PROGRAM", result);
+            Assert.Contains("</PROGRAM>", result);
+            // Add more assertions as needed
+        }
+
+        [Fact]
+        public void ConvertNodeToXml_WithValidNode_ShouldWriteXmlAttributes()
+        {
+            // Arrange
+            AstFactory astFactory = new AstFactory();
+            AstToXmlConverter converter = new AstToXmlConverter();
+            Mock<IAstNode> nodeMock = new Mock<IAstNode>();
+            nodeMock.SetupGet(n => n.Type).Returns(AstNodeTypes.ASSIGN);
+            nodeMock.SetupGet(n => n.Properties).Returns(new AstNodeProperties(1, id: 42, value: "assignValue"));
+            nodeMock.SetupGet(n => n.TypeSpec).Returns(new TypeSpec(TypeForm.SCALAR, null, null, null));
+
+            //
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Xml;
+using Moq;
+using Xunit;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.Tests
+{
+    public class AstToXmlConverterTests
+    {
+        [Fact]
+        public void ConvertToXml_WithNullAst_ShouldReturnEmptyString()
+        {
+            // Arrange
+            AstToXmlConverter converter = new AstToXmlConverter();
+
+            // Act
+            string result = converter.ConvertToXml(null);
+
+            // Assert
+            Assert.Equal(string.Empty, result);
+        }
+
+        [Fact]
+        public void ConvertToXml_WithAstContainingNodes_ShouldReturnValidXml()
+        {
+            // Arrange
+            AstFactory astFactory = new AstFactory();
+            AstToXmlConverter converter = new AstToXmlConverter();
+            Mock<IAstNode> rootMock = new Mock<IAstNode>();
+            rootMock.SetupGet(r => r.Type).Returns(AstNodeTypes.PROGRAM);
+            rootMock.SetupGet(r => r.Children).Returns(new List<IAstNode>
+            {
+                // Mock child nodes as needed
+            });
+            IAst ast = astFactory.CreateAst(rootMock.Object);
+
+            // Act
+            string result = converter.ConvertToXml(ast);
+
+            // Assert
+            Assert.NotEmpty(result);
+            Assert.Contains("<PROGRAM", result);
+            Assert.Contains("</PROGRAM>", result);
+            // Add more assertions as needed
+        }
+
+        [Fact]
+        public void ConvertNodeToXml_WithValidNode_ShouldWriteXmlAttributes()
+        {
+            // Arrange
+            AstFactory astFactory = new AstFactory();
+            AstToXmlConverter converter = new AstToXmlConverter();
+            Mock<IAstNode> nodeMock = new Mock<IAstNode>();
+            nodeMock.SetupGet(n => n.Type).Returns(AstNodeTypes.ASSIGN);
+            nodeMock.SetupGet(n => n.Properties).Returns(new AstNodeProperties(1, id: 42, value: "assignValue"));
+            nodeMock.SetupGet(n => n.TypeSpec).Returns(new TypeSpec(TypeForm.SCALAR, null, null, null));
+
+            // Act
+            StringBuilder xmlBuilder = new StringBuilder();
+            converter.ConvertNodeToXml(nodeMock.Object, xmlBuilder, 1);
+            string result = xmlBuilder.ToString();
+
+            // Assert
+            Assert.Contains("<ASSIGN line=\"1\" type_id=\"scalar\">", result);
+            Assert.Contains("id=\"42\" value=\"assignValue\"", result);
+            Assert.Contains("</ASSIGN>", result);
+            // Add more assertions as needed
+        }
+
+        [Fact]
+        public void ConvertNodeToXml_WithChildNodes_ShouldIncludeChildNodesInXml()
+        {
+            // Arrange
+            AstFactory astFactory = new AstFactory();
+            AstToXmlConverter converter = new AstToXmlConverter();
+            Mock<IAstNode> rootMock = new Mock<IAstNode>();
+            rootMock.SetupGet(r => r.Type).Returns(AstNodeTypes.PROGRAM);
+            Mock<IAstNode> childMock = new Mock<IAstNode>();
+            childMock.SetupGet(c => c.Type).Returns(AstNodeTypes.ASSIGN);
+            rootMock.SetupGet(r => r.Children).Returns(new List<IAstNode> { childMock.Object });
+            IAst ast = astFactory.CreateAst(rootMock.Object);
+
+            // Act
+            string result = converter.ConvertToXml(ast);
+
+            // Assert
+            Assert.Contains("<PROGRAM", result);
+            Assert.Contains("<ASSIGN", result);
+            Assert.Contains("</PROGRAM>", result);
+            Assert.Contains("</ASSIGN>", result);
+            // Add more assertions as needed
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Xml;
+using Moq;
+using Xunit;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.Tests
+{
+    public class AstToXmlConverterTests
+    {
+        // ... (previous tests)
+
+        [Fact]
+        public void ConvertNodeToXml_WithNodeContainingTypeSpecAndSymTabEntry_ShouldIncludeTypeSpecAndSymTabEntryInXml()
+        {
+            // Arrange
+            AstFactory astFactory = new AstFactory();
+            AstToXmlConverter converter = new AstToXmlConverter();
+            Mock<IAstNode> nodeMock = new Mock<IAstNode>();
+            Mock<ITypeSpec> typeSpecMock = new Mock<ITypeSpec>();
+            Mock<ISymTabEntry> symTabEntryMock = new Mock<ISymTabEntry>();
+
+            nodeMock.SetupGet(n => n.Type).Returns(AstNodeTypes.VARIABLE);
+            nodeMock.SetupGet(n => n.Properties).Returns(new AstNodeProperties(1, id: 42, value: "variableValue"));
+            nodeMock.SetupGet(n => n.TypeSpec).Returns(typeSpecMock.Object);
+            typeSpecMock.SetupGet(t => t.Form).Returns(TypeForm.SCALAR);
+            typeSpecMock.SetupGet(t => t.Identifier).Returns(symTabEntryMock.Object);
+
+            // Act
+            StringBuilder xmlBuilder = new StringBuilder();
+            converter.ConvertNodeToXml(nodeMock.Object, xmlBuilder, 1);
+            string result = xmlBuilder.ToString();
+
+            // Assert
+            Assert.Contains("<VARIABLE line=\"1\" type_id=\"scalar\">", result);
+            Assert.Contains("id=\"42\" value=\"variableValue\"", result);
+            Assert.Contains("</VARIABLE>", result);
+            // Add more assertions as needed
+        }
+
+        [Fact]
+        public void ConvertNodeToXml_WithNodeContainingSubrangeTypeSpec_ShouldIncludeSubrangeTypeSpecInXml()
+        {
+            // Arrange
+            AstFactory astFactory = new AstFactory();
+            AstToXmlConverter converter = new AstToXmlConverter();
+            Mock<IAstNode> nodeMock = new Mock<IAstNode>();
+            Mock<ITypeSpec> typeSpecMock = new Mock<ITypeSpec>();
+            Mock<TypeSpecProperties> typeSpecPropertiesMock = new Mock<TypeSpecProperties>();
+
+            nodeMock.SetupGet(n => n.Type).Returns(AstNodeTypes.VARIABLE);
+            nodeMock.SetupGet(n => n.Properties).Returns(new AstNodeProperties(1, id: 42, value: "variableValue"));
+            nodeMock.SetupGet(n => n.TypeSpec).Returns(typeSpecMock.Object);
+            typeSpecMock.SetupGet(t => t.Form).Returns(TypeForm.SUBRANGE);
+            typeSpecMock.SetupGet(t => t.Properties).Returns(typeSpecPropertiesMock.Object);
+            typeSpecPropertiesMock.SetupGet(p => p).Returns(new SubrangeTypeProperties(1, 10));
+
+            // Act
+            StringBuilder xmlBuilder = new StringBuilder();
+            converter.ConvertNodeToXml(nodeMock.Object, xmlBuilder, 1);
+            string result = xmlBuilder.ToString();
+
+            // Assert
+            Assert.Contains("<VARIABLE line=\"1\" type_id=\"subrange\">", result);
+            Assert.Contains("id=\"42\" value=\"variableValue\"", result);
+            Assert.Contains("<SUBRANGE>", result);
+            Assert.Contains("minRange=\"1\" maxRange=\"10\"", result);
+            Assert.Contains("</SUBRANGE>", result);
+            Assert.Contains("</VARIABLE>", result);
+            // Add more assertions as needed
+        }
+    }
+}
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Xml;
+using Moq;
+using Xunit;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.Tests
+{
+    public class AstToXmlConverterTests
+    {
+        [Fact]
+        public void ConvertToXml_WithSpecificAst_ShouldProduceExpectedXml()
+        {
+            // Arrange
+            AstFactory astFactory = new AstFactory();
+            AstToXmlConverter converter = new AstToXmlConverter();
+
+            // Create a mock AST structure to match the specified XML
+            Mock<IAstNode> programNodeMock = new Mock<IAstNode>();
+            programNodeMock.SetupGet(n => n.Type).Returns(AstNodeTypes.PROGRAM);
+            programNodeMock.SetupGet(n => n.Properties).Returns(new AstNodeProperties(1, id: 42, value: "QuickBasicProgram"));
+            Mock<IAstNode> assignNodeMock = new Mock<IAstNode>();
+            assignNodeMock.SetupGet(n => n.Type).Returns(AstNodeTypes.ASSIGN);
+            assignNodeMock.SetupGet(n => n.Properties).Returns(new AstNodeProperties(4));
+            Mock<IAstNode> variableNodeMock = new Mock<IAstNode>();
+            variableNodeMock.SetupGet(n => n.Type).Returns(AstNodeTypes.VARIABLE);
+            variableNodeMock.SetupGet(n => n.Properties).Returns(new AstNodeProperties(4, id: 43, value: "A"));
+            Mock<IAstNode> subscriptsNodeMock = new Mock<IAstNode>();
+            subscriptsNodeMock.SetupGet(n => n.Type).Returns(AstNodeTypes.SUBSCRIPTS);
+            subscriptsNodeMock.SetupGet(n => n.TypeSpec).Returns(new TypeSpec(TypeForm.SCALAR, null, null, null));
+            Mock<IAstNode> integerConstantNodeMock = new Mock<IAstNode>();
+            integerConstantNodeMock.SetupGet(n => n.Type).Returns(AstNodeTypes.INTEGER_CONSTANT);
+            integerConstantNodeMock.SetupGet(n => n.Properties).Returns(new AstNodeProperties(4, value: "1"));
+            Mock<IAstNode> convertNodeMock = new Mock<IAstNode>();
+            convertNodeMock.SetupGet(n => n.Type).Returns(AstNodeTypes.CONVERT);
+            convertNodeMock.SetupGet(n => n.TypeSpec).Returns(new TypeSpec(TypeForm.SCALAR, null, null, null));
+            Mock<IAstNode> realConstantNodeMock = new Mock<IAstNode>();
+            realConstantNodeMock.SetupGet(n => n.Type).Returns(AstNodeTypes.REAL_CONSTANT);
+            realConstantNodeMock.SetupGet(n => n.Properties).Returns(new AstNodeProperties(4, value: "3.14"));
+
+            programNodeMock.SetupGet(n => n.Children).Returns(new List<IAstNode> { assignNodeMock.Object });
+            assignNodeMock.SetupGet(n => n.Children).Returns(new List<IAstNode> { variableNodeMock.Object, convertNodeMock.Object });
+            variableNodeMock.SetupGet(n => n.Children).Returns(new List<IAstNode> { subscriptsNodeMock.Object });
+            subscriptsNodeMock.SetupGet(n => n.Children).Returns(new List<IAstNode> { integerConstantNodeMock.Object });
+            convertNodeMock.SetupGet(n => n.Children).Returns(new List<IAstNode> { realConstantNodeMock.Object });
+
+            IAst ast = astFactory.CreateAst(programNodeMock.Object);
+
+            // Act
+            string result = converter.ConvertToXml(ast);
+
+            // Assert
+            string expectedXml = @"<PROGRAM id=""QuickBasicProgram"" scope=""MODULE"" line=""1"">
+    <ASSIGN line=""4"" type_id=""double"">
+        <VARIABLE id=""A"" scope=""PROCEDURE"" type_id=""double"">
+            <SUBSCRIPTS type_id=""double"">
+                <INTEGER_CONSTANT value=""1"" type_id=""integer"" />
+            </SUBSCRIPTS>
+        </VARIABLE>
+        <CONVERT type_id=""double"">
+            <REAL_CONSTANT value=""3.14"" type_id=""single"" />
+        </CONVERT>
+    </ASSIGN>
+</PROGRAM>";
+
+            Assert.Equal(expectedXml, result, ignoreLineEndingDifferences: true);
+        }
+    }
+}
