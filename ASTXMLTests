@@ -719,4 +719,57 @@ namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder
         }
     }
 }
+using Moq;
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder;
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer.OMLSymbolTable;
+using Xunit;
+
+namespace YourNamespace.Tests
+{
+    public class AstToXmlConverterTests
+    {
+        [Fact]
+        public void ConvertToXml_AstWithSpecificStructure_CreatesMatchingXmlString()
+        {
+            // Arrange
+            var astFactoryMock = new Mock<AstFactory>();
+            var astNodeFactoryMock = new Mock<IAstNodeFactory>();
+            var astNodePropertiesMock = new Mock<AstNodeProperties>();
+            var astNodeMock = new Mock<IAstNode>();
+
+            astNodeMock.SetupGet(n => n.Type).Returns(AstNodeType.PROGRAM);
+            astNodeMock.SetupGet(n => n.Properties).Returns(astNodePropertiesMock.Object);
+
+            astNodePropertiesMock.SetupGet(p => p.Id).Returns(new SymbolTableEntry("A", null));
+            astNodePropertiesMock.SetupGet(p => p.Value).Returns(new SymbolTableEntry("3.14", null));
+            astNodePropertiesMock.SetupGet(p => p.Line).Returns(4);
+
+            astNodeMock.SetupGet(n => n.TypeSpec).Returns(new TypeSpec(TypeForm.SCALAR, null, null, null));
+
+            astFactoryMock.Setup(f => f.CreateNode(It.IsAny<AstNodeType>())).Returns(astNodeMock.Object);
+
+            var ast = new Mock<IAst>();
+            ast.SetupGet(a => a.Root).Returns(astNodeMock.Object);
+
+            var astToXmlConverter = new AstToXmlConverter();
+
+            // Act
+            var result = astToXmlConverter.ConvertToXml(ast.Object);
+
+            // Assert
+            Assert.Equal("<PROGRAM id=\"A\" scope=\"PROCEDURE\" line=\"4\">" +
+                "<ASSIGN type_id=\"double\">" +
+                    "<VARIABLE id=\"A\" scope=\"PROCEDURE\" type_id=\"double\">" +
+                        "<SUBSCRIPTS type_id=\"double\">" +
+                            "<INTEGER_CONSTANT value=\"1\" type_id=\"integer\" />" +
+                        "</SUBSCRIPTS>" +
+                    "</VARIABLE>" +
+                    "<CONVERT type_id=\"double\">" +
+                        "<REAL_CONSTANT value=\"3.14\" type_id=\"single\" />" +
+                    "</CONVERT>" +
+                "</ASSIGN>" +
+            "</PROGRAM>", result);
+        }
+    }
+}
 
