@@ -1,0 +1,115 @@
+// Create a symbol table
+ISymbolTable symbolTable = new SymbolTable(MemoryScope.GLOBAL);
+
+// Enter variable 'x' into the symbol table
+ISymbolTableEntry variableX = symbolTable.Enter("x");
+variableX.TypeSpec = new TypeSpec(TypeForm.SCALAR, null, null, new ScalarTypeProperties(0, 100, true));
+variableX.Definition = Definition.VARIABLE;
+variableX.AppendLineNumber(10);
+
+// Enter procedure 'calculate' into the symbol table
+ISymbolTableEntry procedureCalculate = symbolTable.Enter("calculate");
+procedureCalculate.Definition = Definition.PROCEDURE;
+procedureCalculate.AppendLineNumber(20);
+
+// Enter constant 'PI' into the symbol table
+ISymbolTableEntry constantPI = symbolTable.Enter("PI");
+constantPI.TypeSpec = new TypeSpec(TypeForm.SCALAR, null, null, new ScalarTypeProperties(0, 0, false));
+constantPI.Definition = Definition.CONSTANT;
+constantPI.AppendLineNumber(30);
+
+// Display the entries in the symbol table
+foreach (var entry in symbolTable.Entries)
+{
+    Console.WriteLine($"Name: {entry.Name}, Definition: {entry.Definition}, Type: {entry.TypeSpec?.Form}, Line Numbers: {string.Join(", ", entry.LineNumbers)}");
+}
+using System;
+using System.Text;
+using System.Xml;
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer;
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder;
+
+namespace SymbolTableToXmlConverter
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            // Create a sample symbol table
+            ISymbolTable symbolTable = CreateSampleSymbolTable();
+
+            // Convert symbol table to XML
+            string xmlString = ConvertSymbolTableToXml(symbolTable);
+
+            // Display the generated XML
+            Console.WriteLine(xmlString);
+        }
+
+        static ISymbolTable CreateSampleSymbolTable()
+        {
+            ISymbolTable symbolTable = new SymbolTable(MemoryScope.GLOBAL);
+
+            ISymbolTableEntry variableX = symbolTable.Enter("x");
+            variableX.TypeSpec = new TypeSpec(TypeForm.SCALAR, null, null, new ScalarTypeProperties(0, 100, true));
+            variableX.Definition = Definition.VARIABLE;
+            variableX.AppendLineNumber(10);
+
+            ISymbolTableEntry procedureCalculate = symbolTable.Enter("calculate");
+            procedureCalculate.Definition = Definition.PROCEDURE;
+            procedureCalculate.AppendLineNumber(20);
+
+            ISymbolTableEntry constantPI = symbolTable.Enter("PI");
+            constantPI.TypeSpec = new TypeSpec(TypeForm.SCALAR, null, null, new ScalarTypeProperties(0, 0, false));
+            constantPI.Definition = Definition.CONSTANT;
+            constantPI.AppendLineNumber(30);
+
+            return symbolTable;
+        }
+
+        static string ConvertSymbolTableToXml(ISymbolTable symbolTable)
+        {
+            StringBuilder xmlBuilder = new StringBuilder();
+            using (XmlWriter writer = XmlWriter.Create(xmlBuilder))
+            {
+                writer.WriteStartDocument();
+                writer.WriteStartElement("SymbolTable");
+
+                foreach (var entry in symbolTable.Entries)
+                {
+                    ConvertEntryToXml(writer, entry);
+                }
+
+                writer.WriteEndElement();
+                writer.WriteEndDocument();
+            }
+
+            return xmlBuilder.ToString();
+        }
+
+        static void ConvertEntryToXml(XmlWriter writer, ISymbolTableEntry entry)
+        {
+            if (entry == null) return;
+
+            writer.WriteStartElement("Entry");
+            writer.WriteAttributeString("Name", entry.Name);
+            writer.WriteAttributeString("Definition", entry.Definition.ToString());
+
+            if (entry.TypeSpec != null)
+            {
+                writer.WriteStartElement("TypeSpec");
+                writer.WriteAttributeString("Form", entry.TypeSpec.Form.ToString());
+                // Add other attributes based on TypeSpec properties
+                writer.WriteEndElement();
+            }
+
+            writer.WriteStartElement("LineNumbers");
+            foreach (var lineNumber in entry.LineNumbers)
+            {
+                writer.WriteElementString("LineNumber", lineNumber.ToString());
+            }
+            writer.WriteEndElement();
+
+            writer.WriteEndElement();
+        }
+    }
+}
