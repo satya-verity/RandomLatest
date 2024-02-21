@@ -1,0 +1,282 @@
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using System.Xml;
+using MacroRunner.Frontend.SemanticAnalyzer.OMLSymbolTable;
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer;
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder;
+using Moq;
+using Xunit;
+
+namespace MacroRunner.Tests.Frontend.SemanticAnalyzer.OMLSymbolTable
+{
+    public class SymbolTableToXMLConverterTests
+    {
+        [Fact]
+        public void ConvertSymbolTableToXml_SymbolTableWithEntries_GeneratesCorrectXml()
+        {
+            // Arrange
+            var symbolTableMock = new Mock<ISymbolTable>();
+            var entry1 = CreateSymbolTableEntryMock("Variable1", Definition.VARIABLE, MemoryScope.GLOBAL, new List<int> { 10, 20 });
+            var entry2 = CreateSymbolTableEntryMock("Procedure1", Definition.PROCEDURE, MemoryScope.GLOBAL, new List<int> { 30, 40 });
+            symbolTableMock.Setup(t => t.Entries).Returns(new List<ISymbolTableEntry> { entry1.Object, entry2.Object });
+
+            // Act
+            var xmlString = SymbolTableToXMLConverter.ConvertSymbolTableToXml(symbolTableMock.Object);
+
+            // Assert
+            Assert.NotNull(xmlString);
+            Assert.Contains("<SYMBOL name=\"Variable1\" scope=\"GLOBAL\" definition=\"VARIABLE\">", xmlString);
+            Assert.Contains("<LineNumber>10</LineNumber>", xmlString);
+            Assert.Contains("<LineNumber>20</LineNumber>", xmlString);
+            Assert.Contains("<SYMBOL name=\"Procedure1\" scope=\"GLOBAL\" definition=\"PROCEDURE\">", xmlString);
+            Assert.Contains("<LineNumber>30</LineNumber>", xmlString);
+            Assert.Contains("<LineNumber>40</LineNumber>", xmlString);
+        }
+
+        private Mock<ISymbolTableEntry> CreateSymbolTableEntryMock(string name, Definition definition, MemoryScope scope, List<int> lineNumbers)
+        {
+            var entryMock = new Mock<ISymbolTableEntry>();
+            entryMock.Setup(e => e.Name).Returns(name);
+            entryMock.Setup(e => e.Definition).Returns(definition);
+            entryMock.Setup(e => e.SymbolTable).Returns(CreateSymbolTableMock(scope).Object);
+            entryMock.Setup(e => e.LineNumbers).Returns(lineNumbers);
+            return entryMock;
+        }
+
+        private Mock<ISymbolTable> CreateSymbolTableMock(MemoryScope scope)
+        {
+            var symbolTableMock = new Mock<ISymbolTable>();
+            symbolTableMock.Setup(t => t.Scope).Returns(scope);
+            return symbolTableMock;
+        }
+    }
+}
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using System.Xml;
+using MacroRunner.Frontend.SemanticAnalyzer.OMLSymbolTable;
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer;
+using Moq;
+using Xunit;
+
+namespace MacroRunner.Tests.Frontend.SemanticAnalyzer.OMLSymbolTable
+{
+    public class SymbolTableToXMLConverterTests
+    {
+        [Fact]
+        public void ConvertSymbolTableToXml_NullSymbolTable_ReturnsEmptyXml()
+        {
+            // Act
+            var xmlString = SymbolTableToXMLConverter.ConvertSymbolTableToXml(null);
+
+            // Assert
+            Assert.NotNull(xmlString);
+            Assert.Equal(string.Empty, xmlString);
+        }
+
+        [Fact]
+        public void ConvertSymbolTableToXml_EmptySymbolTable_ReturnsEmptyXml()
+        {
+            // Arrange
+            var symbolTableMock = new Mock<ISymbolTable>();
+            symbolTableMock.Setup(t => t.Entries).Returns(new List<ISymbolTableEntry>());
+
+            // Act
+            var xmlString = SymbolTableToXMLConverter.ConvertSymbolTableToXml(symbolTableMock.Object);
+
+            // Assert
+            Assert.NotNull(xmlString);
+            Assert.Equal(string.Empty, xmlString);
+        }
+
+        [Fact]
+        public void ConvertSymbolTableToXml_SymbolTableEntryWithNoTypeSpec_GeneratesXmlWithoutType()
+        {
+            // Arrange
+            var symbolTableMock = new Mock<ISymbolTable>();
+            var entryMock = CreateSymbolTableEntryMock("Variable1", Definition.VARIABLE, MemoryScope.GLOBAL, new List<int> { 10, 20 });
+            symbolTableMock.Setup(t => t.Entries).Returns(new List<ISymbolTableEntry> { entryMock.Object });
+
+            // Act
+            var xmlString = SymbolTableToXMLConverter.ConvertSymbolTableToXml(symbolTableMock.Object);
+
+            // Assert
+            Assert.NotNull(xmlString);
+            Assert.Contains("<SYMBOL name=\"Variable1\" scope=\"GLOBAL\" definition=\"VARIABLE\">", xmlString);
+            Assert.DoesNotContain("<TYPE", xmlString);
+        }
+
+        [Fact]
+        public void ConvertSymbolTableToXml_SymbolTableEntryWithTypeSpec_GeneratesXmlWithType()
+        {
+            // Arrange
+            var symbolTableMock = new Mock<ISymbolTable>();
+            var entryMock = CreateSymbolTableEntryMock("Variable1", Definition.VARIABLE, MemoryScope.GLOBAL, new List<int> { 10, 20 });
+            entryMock.Setup(e => e.TypeSpec).Returns(CreateTypeSpecMock().Object);
+            symbolTableMock.Setup(t => t.Entries).Returns(new List<ISymbolTableEntry> { entryMock.Object });
+
+            // Act
+            var xmlString = SymbolTableToXMLConverter.ConvertSymbolTableToXml(symbolTableMock.Object);
+
+            // Assert
+            Assert.NotNull(xmlString);
+            Assert.Contains("<SYMBOL name=\"Variable1\" scope=\"GLOBAL\" definition=\"VARIABLE\">", xmlString);
+            Assert.Contains("<TYPE form=\"SCALAR\" />", xmlString);
+        }
+
+        private Mock<ISymbolTableEntry> CreateSymbolTableEntryMock(string name, Definition definition, MemoryScope scope, List<int> lineNumbers)
+        {
+            var entryMock = new Mock<ISymbolTableEntry>();
+            entryMock.Setup(e => e.Name).Returns(name);
+            entryMock.Setup(e => e.Definition).Returns(definition);
+            entryMock.Setup(e => e.SymbolTable).Returns(CreateSymbolTableMock(scope).Object);
+            entryMock.Setup(e => e.LineNumbers).Returns(lineNumbers);
+            return entryMock;
+        }
+
+        private Mock<ISymbolTable> CreateSymbolTableMock(MemoryScope scope)
+        {
+            var symbolTableMock = new Mock<ISymbolTable>();
+            symbolTableMock.Setup(t => t.Scope).Returns(scope);
+            return symbolTableMock;
+        }
+
+        private Mock<ITypeSpec> CreateTypeSpecMock()
+        {
+            var typeSpecMock = new Mock<ITypeSpec>();
+            typeSpecMock.Setup(t => t.Form).Returns(TypeForm.SCALAR);
+            return typeSpecMock;
+        }
+    }
+}
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using System.Xml;
+using MacroRunner.Frontend.SemanticAnalyzer.OMLSymbolTable;
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer;
+using Moq;
+using Xunit;
+
+namespace MacroRunner.Tests.Frontend.SemanticAnalyzer.OMLSymbolTable
+{
+    public class SymbolTableToXMLConverterTests
+    {
+        [Fact]
+        public void ConvertSymbolTableToXml_SymbolTableWithMultipleEntries_GeneratesXmlForEachEntry()
+        {
+            // Arrange
+            var symbolTableMock = new Mock<ISymbolTable>();
+            var entryMock1 = CreateSymbolTableEntryMock("Variable1", Definition.VARIABLE, MemoryScope.GLOBAL, new List<int> { 10, 20 });
+            var entryMock2 = CreateSymbolTableEntryMock("Variable2", Definition.VARIABLE, MemoryScope.GLOBAL, new List<int> { 30, 40 });
+            symbolTableMock.Setup(t => t.Entries).Returns(new List<ISymbolTableEntry> { entryMock1.Object, entryMock2.Object });
+
+            // Act
+            var xmlString = SymbolTableToXMLConverter.ConvertSymbolTableToXml(symbolTableMock.Object);
+
+            // Assert
+            Assert.NotNull(xmlString);
+            Assert.Contains("<SYMBOL name=\"Variable1\" scope=\"GLOBAL\" definition=\"VARIABLE\">", xmlString);
+            Assert.Contains("<SYMBOL name=\"Variable2\" scope=\"GLOBAL\" definition=\"VARIABLE\">", xmlString);
+        }
+
+        [Fact]
+        public void ConvertSymbolTableToXml_SymbolTableWithEntryWithoutLines_GeneratesXmlWithoutLinesElement()
+        {
+            // Arrange
+            var symbolTableMock = new Mock<ISymbolTable>();
+            var entryMock = CreateSymbolTableEntryMock("Variable1", Definition.VARIABLE, MemoryScope.GLOBAL, new List<int>());
+            symbolTableMock.Setup(t => t.Entries).Returns(new List<ISymbolTableEntry> { entryMock.Object });
+
+            // Act
+            var xmlString = SymbolTableToXMLConverter.ConvertSymbolTableToXml(symbolTableMock.Object);
+
+            // Assert
+            Assert.NotNull(xmlString);
+            Assert.Contains("<SYMBOL name=\"Variable1\" scope=\"GLOBAL\" definition=\"VARIABLE\">", xmlString);
+            Assert.DoesNotContain("<LINES>", xmlString);
+        }
+
+        [Fact]
+        public void ConvertSymbolTableToXml_SymbolTableWithEntryWithoutTypeSpec_GeneratesXmlWithoutTypeElement()
+        {
+            // Arrange
+            var symbolTableMock = new Mock<ISymbolTable>();
+            var entryMock = CreateSymbolTableEntryMock("Variable1", Definition.VARIABLE, MemoryScope.GLOBAL, new List<int> { 10, 20 });
+            symbolTableMock.Setup(t => t.Entries).Returns(new List<ISymbolTableEntry> { entryMock.Object });
+
+            // Act
+            var xmlString = SymbolTableToXMLConverter.ConvertSymbolTableToXml(symbolTableMock.Object);
+
+            // Assert
+            Assert.NotNull(xmlString);
+            Assert.Contains("<SYMBOL name=\"Variable1\" scope=\"GLOBAL\" definition=\"VARIABLE\">", xmlString);
+            Assert.DoesNotContain("<TYPE", xmlString);
+        }
+
+        // Add more tests as needed
+    }
+}
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using System.Xml;
+using MacroRunner.Frontend.SemanticAnalyzer.OMLSymbolTable;
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer;
+using Moq;
+using Xunit;
+
+namespace MacroRunner.Tests.Frontend.SemanticAnalyzer.OMLSymbolTable
+{
+    public class SymbolTableToXMLConverterTests
+    {
+        [Fact]
+        public void ConvertSymbolTableToXml_SymbolTableWithSpecificEntries_GeneratesExpectedXml()
+        {
+            // Arrange
+            var symbolTableMock = new Mock<ISymbolTable>();
+            var entries = CreateSpecificSymbolTableEntries();
+            symbolTableMock.Setup(t => t.Entries).Returns(entries);
+
+            // Act
+            var xmlString = SymbolTableToXMLConverter.ConvertSymbolTableToXml(symbolTableMock.Object);
+
+            // Assert
+            Assert.NotNull(xmlString);
+            Assert.Contains("<SYMBOL name=\"RegType\" scope=\"MODULE\" definition=\"TYPE\">", xmlString);
+            Assert.Contains("<SYMBOL name=\"AX\" scope=\"CUSTOM_TYPE\" definition=\"FIELD\">", xmlString);
+            Assert.Contains("<SYMBOL name=\"BX\" scope=\"CUSTOM_TYPE\" definition=\"FIELD\">", xmlString);
+            Assert.Contains("<SYMBOL name=\"CX\" scope=\"CUSTOM_TYPE\" definition=\"FIELD\">", xmlString);
+            Assert.Contains("<SYMBOL name=\"DX\" scope=\"CUSTOM_TYPE\" definition=\"FIELD\">", xmlString);
+            Assert.Contains("<SYMBOL name=\"BP\" scope=\"CUSTOM_TYPE\" definition=\"FIELD\">", xmlString);
+            Assert.Contains("<SYMBOL name=\"SI\" scope=\"CUSTOM_TYPE\" definition=\"FIELD\">", xmlString);
+            Assert.Contains("<SYMBOL name=\"Flags\" scope=\"CUSTOM_TYPE\" definition=\"FIELD\">", xmlString);
+            Assert.Contains("<SYMBOL name=\"FS\" scope=\"CUSTOM_TYPE\" definition=\"FIELD\">", xmlString);
+            Assert.Contains("<SYMBOL name=\"ES\" scope=\"CUSTOM_TYPE\" definition=\"FIELD\">", xmlString);
+        }
+
+        private List<ISymbolTableEntry> CreateSpecificSymbolTableEntries()
+        {
+            var entries = new List<ISymbolTableEntry>
+            {
+                CreateSymbolTableEntryMock("RegType", Definition.TYPE, MemoryScope.MODULE, new List<int> { 135, 142 }).Object,
+                CreateSymbolTableEntryMock("AX", Definition.FIELD, MemoryScope.CUSTOM_TYPE, new List<int> { 136 }).Object,
+                CreateSymbolTableEntryMock("BX", Definition.FIELD, MemoryScope.CUSTOM_TYPE, new List<int> { 136 }).Object,
+                CreateSymbolTableEntryMock("CX", Definition.FIELD, MemoryScope.CUSTOM_TYPE, new List<int> { 136 }).Object,
+                CreateSymbolTableEntryMock("DX", Definition.FIELD, MemoryScope.CUSTOM_TYPE, new List<int> { 136 }).Object,
+                CreateSymbolTableEntryMock("BP", Definition.FIELD, MemoryScope.CUSTOM_TYPE, new List<int> { 136 }).Object,
+                CreateSymbolTableEntryMock("SI", Definition.FIELD, MemoryScope.CUSTOM_TYPE, new List<int> { 136 }).Object,
+                CreateSymbolTableEntryMock("Flags", Definition.FIELD, MemoryScope.CUSTOM_TYPE, new List<int> { 136 }).Object,
+                CreateSymbolTableEntryMock("FS", Definition.FIELD, MemoryScope.CUSTOM_TYPE, new List<int> { 136 }).Object,
+                CreateSymbolTableEntryMock("ES", Definition.FIELD, MemoryScope.CUSTOM_TYPE, new List<int> { 136 }).Object,
+            };
+
+            return entries;
+        }
+
+        // Add more tests as needed
+    }
+}
+
