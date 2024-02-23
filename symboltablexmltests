@@ -280,3 +280,34 @@ namespace MacroRunner.Tests.Frontend.SemanticAnalyzer.OMLSymbolTable
     }
 }
 
+// AstToXmlConverterTests.cs
+// ... (previous using statements)
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.Tests
+{
+    public class AstToXmlConverterTests
+    {
+        [Fact]
+        public void ConvertToXml_ScalarTypeProperties_CreatesValidXml()
+        {
+            // Arrange
+            var astNodeMock = new Mock<IAstNode>();
+            astNodeMock.SetupAllProperties();
+            var scalarTypePropertiesMock = new Mock<ScalarTypeProperties> { MinRange = 1, MaxRange = 100, IsSigned = true };
+            astNodeMock.Object.Properties = scalarTypePropertiesMock.Object;
+
+            var converter = new AstToXmlConverter();
+
+            // Act
+            var result = converter.ConvertToXml(astNodeMock.Object);
+
+            // Assert
+            Assert.NotEmpty(result);
+            // Add more specific assertions based on your expected XML structure for ScalarTypeProperties
+        }
+
+        // ... (similar tests for other TypeSpecProperties)
+    }
+}
+
+
