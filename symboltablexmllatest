@@ -1,0 +1,218 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Xml;
+using System.Xml.Linq;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder
+{
+    public class AstToXmlConverter
+    {
+        public string ConvertToXml(IAst ast)
+        {
+            if (ast == null) return string.Empty;
+            StringBuilder xmlBuilder = new StringBuilder();
+            using (XmlWriter writer = XmlWriter.Create(xmlBuilder, new XmlWriterSettings { Indent = false, OmitXmlDeclaration=true }))
+            {
+                ConvertNodeToXml(writer, ast.Root);
+            }
+            return xmlBuilder.ToString();
+        }
+
+        private void ConvertNodeToXml(XmlWriter writer, IAstNode node)
+        {
+            if (node == null) return;
+            writer.WriteStartElement(node.Type.ToString());
+            if (node.Properties != null)
+            {
+                if (node.Properties.Id != null)
+                {
+                    writer.WriteAttributeString("id", node.Properties.Id.Name);
+                    writer.WriteAttributeString("scope", node.Properties.Id.SymbolTable.Scope.ToString());
+                    if (node.Properties.Id.LineNumbers.Count() > 0)
+                    {
+                        writer.WriteAttributeString("line", string.Join<int>(",", node.Properties.Id.LineNumbers.ToList()));
+                    }
+                }
+                if (node.Properties.Value != null)
+                {
+                    writer.WriteAttributeString("value", node.Properties.Value.Name);
+                }
+            }
+            if (node.TypeSpec != null)
+            {
+                writer.WriteAttributeString("type_id", node.TypeSpec.Form.ToString());
+            }
+
+            foreach (var child in node.Children)
+            {
+                ConvertNodeToXml(writer, child);
+            }
+
+            writer.WriteEndElement();
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Xml;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.TypeProperties
+{
+    public class ScalarTypeProperties : TypeSpecProperties
+    {
+        public int MinRange { get; }
+        public int MaxRange { get; }
+        public bool IsSigned { get; }
+
+        public ScalarTypeProperties(int minRange, int maxRange, bool isSigned)
+        {
+            MinRange = minRange;
+            MaxRange = maxRange;
+            IsSigned = isSigned;
+        }
+
+        public override void ConvertToXml(XmlWriter writer)
+        {
+            writer.WriteAttributeString("minRange", this.MinRange.ToString());
+            writer.WriteAttributeString("maxRange", this.MaxRange.ToString());
+            writer.WriteAttributeString("isSigned", this.IsSigned.ToString());
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Xml;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.TypeProperties
+{
+    public class SubrangeTypeProperties : TypeSpecProperties
+    {
+        public int MinRange { get; }
+        public int MaxRange { get; }
+
+        public SubrangeTypeProperties(int minRange, int maxRange)
+        {
+            MinRange = minRange;
+            MaxRange = maxRange;
+        }
+
+        public override void ConvertToXml(XmlWriter writer)
+        {
+            writer.WriteAttributeString("minRange", this.MinRange.ToString());
+            writer.WriteAttributeString("maxRange", this.MaxRange.ToString());
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Xml;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.TypeProperties
+{
+    public class ArrayTypeProperties : TypeSpecProperties
+    {
+        public int Size { get; }
+        public ValueElementType ElementType { get; }
+
+        public ArrayTypeProperties(int size, ValueElementType elementType)
+        {
+            Size = size;
+            ElementType = elementType;
+        }
+
+        public override void ConvertToXml(XmlWriter writer)
+        {
+            writer.WriteAttributeString("size", this.Size.ToString());
+            writer.WriteAttributeString("elementType", this.ElementType.ToString());
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Xml;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.TypeProperties
+{
+    public class RecordTypeProperties : TypeSpecProperties
+    {
+        private IEnumerable<Tuple<string, ValueElementType>> fields { get; }
+
+        public IEnumerable<Tuple<string, ValueElementType>> Fields => fields.ToList();
+        public RecordTypeProperties(IEnumerable<Tuple<string, ValueElementType>> fields)
+        {
+            this.fields = fields.ToList();
+        }
+
+        public override void ConvertToXml(XmlWriter writer)
+        {
+            foreach (var field in this.Fields)
+            {
+                writer.WriteStartElement("FIELD");
+                writer.WriteAttributeString("name", field.Item1);
+                writer.WriteAttributeString("type", field.Item2.ToString());
+                writer.WriteEndElement();
+            }
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Xml;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.TypeProperties
+{
+    public class EnumerationTypeProperties : TypeSpecProperties
+    {
+        private readonly IEnumerable<string> enumerationConstants;
+        public IEnumerable<string> EnumerationConstants => enumerationConstants.ToList();
+
+        public EnumerationTypeProperties(IEnumerable<string> enumerationConstants)
+        {
+            this.enumerationConstants = enumerationConstants.ToList();
+        }
+
+        public override void ConvertToXml(XmlWriter writer)
+        {
+            foreach (var constant in this.EnumerationConstants)
+            {
+                writer.WriteElementString("CONSTANT", constant);
+            }
+        }
+    }
+}
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.TypeProperties;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Xml;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer
+{
+    public abstract class TypeSpecProperties
+    {
+        // Common properties for type specifications
+        public abstract void ConvertToXml(XmlWriter writer);
+    }
+}
+
