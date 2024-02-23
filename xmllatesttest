@@ -1,0 +1,239 @@
+using Moq;
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder;
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.TypeProperties;
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Xml;
+using Xunit;
+
+namespace YourNamespace.Tests
+{
+    public class AstToXmlConverterTests
+    {
+        // ... (previous tests)
+
+        [Fact]
+        public void ConvertToXml_ScalarTypeProperties_CreatesValidXml()
+        {
+            // Arrange
+            var astMock = new Mock<IAst>();
+            var rootMock = new Mock<IAstNode>();
+            astMock.Setup(a => a.Root).Returns(rootMock.Object);
+
+            var astNodePropertiesMock = new Mock<IAstNodeProperties>();
+            astNodePropertiesMock.Setup(p => p.Id).Returns(new Mock<ISymbolTableEntry>().Object);
+
+            var scalarTypePropertiesMock = new Mock<ScalarTypeProperties>(1, 10, true);
+            scalarTypePropertiesMock.SetupAllProperties();
+
+            rootMock.Setup(r => r.Type).Returns(AstNodeTypes.PROGRAM);
+            rootMock.Setup(r => r.Properties).Returns(astNodePropertiesMock.Object);
+            rootMock.Setup(r => r.TypeSpec).Returns(scalarTypePropertiesMock.Object);
+            rootMock.Setup(r => r.Children).Returns(new List<IAstNode>());
+
+            var converter = new AstToXmlConverter();
+
+            // Act
+            var result = converter.ConvertToXml(astMock.Object);
+
+            // Assert
+            Assert.NotEmpty(result);
+            // Add more specific assertions based on your expected XML structure for ScalarTypeProperties
+        }
+
+        [Fact]
+        public void ConvertToXml_SubrangeTypeProperties_CreatesValidXml()
+        {
+            // Arrange
+            var astMock = new Mock<IAst>();
+            var rootMock = new Mock<IAstNode>();
+            astMock.Setup(a => a.Root).Returns(rootMock.Object);
+
+            var astNodePropertiesMock = new Mock<IAstNodeProperties>();
+            astNodePropertiesMock.Setup(p => p.Id).Returns(new Mock<ISymbolTableEntry>().Object);
+
+            var subrangeTypePropertiesMock = new Mock<SubrangeTypeProperties>(1, 10);
+            subrangeTypePropertiesMock.SetupAllProperties();
+
+            rootMock.Setup(r => r.Type).Returns(AstNodeTypes.PROGRAM);
+            rootMock.Setup(r => r.Properties).Returns(astNodePropertiesMock.Object);
+            rootMock.Setup(r => r.TypeSpec).Returns(subrangeTypePropertiesMock.Object);
+            rootMock.Setup(r => r.Children).Returns(new List<IAstNode>());
+
+            var converter = new AstToXmlConverter();
+
+            // Act
+            var result = converter.ConvertToXml(astMock.Object);
+
+            // Assert
+            Assert.NotEmpty(result);
+            // Add more specific assertions based on your expected XML structure for SubrangeTypeProperties
+        }
+
+        // ... (similar tests for other TypeSpecProperties)
+
+    }
+}
+// ... (previous tests)
+
+[Fact]
+public void ConvertToXml_ArrayTypeProperties_CreatesValidXml()
+{
+    // Arrange
+    var astMock = new Mock<IAst>();
+    var rootMock = new Mock<IAstNode>();
+    astMock.Setup(a => a.Root).Returns(rootMock.Object);
+
+    var astNodePropertiesMock = new Mock<IAstNodeProperties>();
+    astNodePropertiesMock.Setup(p => p.Id).Returns(new Mock<ISymbolTableEntry>().Object);
+
+    var arrayTypePropertiesMock = new Mock<ArrayTypeProperties>(5, ValueElementType.INTEGER);
+    arrayTypePropertiesMock.SetupAllProperties();
+
+    rootMock.Setup(r => r.Type).Returns(AstNodeTypes.PROGRAM);
+    rootMock.Setup(r => r.Properties).Returns(astNodePropertiesMock.Object);
+    rootMock.Setup(r => r.TypeSpec).Returns(arrayTypePropertiesMock.Object);
+    rootMock.Setup(r => r.Children).Returns(new List<IAstNode>());
+
+    var converter = new AstToXmlConverter();
+
+    // Act
+    var result = converter.ConvertToXml(astMock.Object);
+
+    // Assert
+    Assert.NotEmpty(result);
+    // Add more specific assertions based on your expected XML structure for ArrayTypeProperties
+}
+
+[Fact]
+public void ConvertToXml_RecordTypeProperties_CreatesValidXml()
+{
+    // Arrange
+    var astMock = new Mock<IAst>();
+    var rootMock = new Mock<IAstNode>();
+    astMock.Setup(a => a.Root).Returns(rootMock.Object);
+
+    var astNodePropertiesMock = new Mock<IAstNodeProperties>();
+    astNodePropertiesMock.Setup(p => p.Id).Returns(new Mock<ISymbolTableEntry>().Object);
+
+    var recordTypePropertiesMock = new Mock<RecordTypeProperties>(
+        new List<Tuple<string, ValueElementType>> {
+            Tuple.Create("Field1", ValueElementType.INTEGER),
+            Tuple.Create("Field2", ValueElementType.BOOLEAN)
+        });
+    recordTypePropertiesMock.SetupAllProperties();
+
+    rootMock.Setup(r => r.Type).Returns(AstNodeTypes.PROGRAM);
+    rootMock.Setup(r => r.Properties).Returns(astNodePropertiesMock.Object);
+    rootMock.Setup(r => r.TypeSpec).Returns(recordTypePropertiesMock.Object);
+    rootMock.Setup(r => r.Children).Returns(new List<IAstNode>());
+
+    var converter = new AstToXmlConverter();
+
+    // Act
+    var result = converter.ConvertToXml(astMock.Object);
+
+    // Assert
+    Assert.NotEmpty(result);
+    // Add more specific assertions based on your expected XML structure for RecordTypeProperties
+}
+
+[Fact]
+public void ConvertToXml_EnumerationTypeProperties_CreatesValidXml()
+{
+    // Arrange
+    var astMock = new Mock<IAst>();
+    var rootMock = new Mock<IAstNode>();
+    astMock.Setup(a => a.Root).Returns(rootMock.Object);
+
+    var astNodePropertiesMock = new Mock<IAstNodeProperties>();
+    astNodePropertiesMock.Setup(p => p.Id).Returns(new Mock<ISymbolTableEntry>().Object);
+
+    var enumerationTypePropertiesMock = new Mock<EnumerationTypeProperties>(
+        new List<string> { "Option1", "Option2", "Option3" });
+    enumerationTypePropertiesMock.SetupAllProperties();
+
+    rootMock.Setup(r => r.Type).Returns(AstNodeTypes.PROGRAM);
+    rootMock.Setup(r => r.Properties).Returns(astNodePropertiesMock.Object);
+    rootMock.Setup(r => r.TypeSpec).Returns(enumerationTypePropertiesMock.Object);
+    rootMock.Setup(r => r.Children).Returns(new List<IAstNode>());
+
+    var converter = new AstToXmlConverter();
+
+    // Act
+    var result = converter.ConvertToXml(astMock.Object);
+
+    // Assert
+    Assert.NotEmpty(result);
+    // Add more specific assertions based on your expected XML structure for EnumerationTypeProperties
+}
+
+// ... (similar tests for other TypeSpecProperties)
+
+// ... (previous tests)
+
+[Fact]
+public void ConvertToXml_SubrangeTypeProperties_CreatesValidXml()
+{
+    // Arrange
+    var astMock = new Mock<IAst>();
+    var rootMock = new Mock<IAstNode>();
+    astMock.Setup(a => a.Root).Returns(rootMock.Object);
+
+    var astNodePropertiesMock = new Mock<IAstNodeProperties>();
+    astNodePropertiesMock.Setup(p => p.Id).Returns(new Mock<ISymbolTableEntry>().Object);
+
+    var subrangeTypePropertiesMock = new Mock<SubrangeTypeProperties>(1, 10);
+    subrangeTypePropertiesMock.SetupAllProperties();
+
+    rootMock.Setup(r => r.Type).Returns(AstNodeTypes.PROGRAM);
+    rootMock.Setup(r => r.Properties).Returns(astNodePropertiesMock.Object);
+    rootMock.Setup(r => r.TypeSpec).Returns(subrangeTypePropertiesMock.Object);
+    rootMock.Setup(r => r.Children).Returns(new List<IAstNode>());
+
+    var converter = new AstToXmlConverter();
+
+    // Act
+    var result = converter.ConvertToXml(astMock.Object);
+
+    // Assert
+    Assert.NotEmpty(result);
+    // Add more specific assertions based on your expected XML structure for SubrangeTypeProperties
+}
+
+[Fact]
+public void ConvertToXml_ScalarTypeProperties_CreatesValidXml()
+{
+    // Arrange
+    var astMock = new Mock<IAst>();
+    var rootMock = new Mock<IAstNode>();
+    astMock.Setup(a => a.Root).Returns(rootMock.Object);
+
+    var astNodePropertiesMock = new Mock<IAstNodeProperties>();
+    astNodePropertiesMock.Setup(p => p.Id).Returns(new Mock<ISymbolTableEntry>().Object);
+
+    var scalarTypePropertiesMock = new Mock<ScalarTypeProperties>(1, 100, true);
+    scalarTypePropertiesMock.SetupAllProperties();
+
+    rootMock.Setup(r => r.Type).Returns(AstNodeTypes.PROGRAM);
+    rootMock.Setup(r => r.Properties).Returns(astNodePropertiesMock.Object);
+    rootMock.Setup(r => r.TypeSpec).Returns(scalarTypePropertiesMock.Object);
+    rootMock.Setup(r => r.Children).Returns(new List<IAstNode>());
+
+    var converter = new AstToXmlConverter();
+
+    // Act
+    var result = converter.ConvertToXml(astMock.Object);
+
+    // Assert
+    Assert.NotEmpty(result);
+    // Add more specific assertions based on your expected XML structure for ScalarTypeProperties
+}
+
+// ... (similar tests for other TypeSpecProperties)
+
+
