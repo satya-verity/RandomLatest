@@ -1,0 +1,81 @@
+static void ConvertTypeSpecToXml(XmlWriter writer, ITypeSpec typeSpec)
+{
+    if (typeSpec == null) return;
+
+    writer.WriteStartElement("TYPE");
+    writer.WriteAttributeString("form", typeSpec.Form.ToString());
+
+    switch (typeSpec)
+    {
+        case SubrangeTypeProperties subrangeType:
+            ConvertSubrangeTypeToXml(writer, subrangeType);
+            break;
+
+        case ScalarTypeProperties scalarType:
+            ConvertScalarTypeToXml(writer, scalarType);
+            break;
+
+        case RecordTypeProperties recordType:
+            ConvertRecordTypeToXml(writer, recordType);
+            break;
+
+        case EnumerationTypeProperties enumerationType:
+            ConvertEnumerationTypeToXml(writer, enumerationType);
+            break;
+
+        case ArrayTypeProperties arrayType:
+            ConvertArrayTypeToXml(writer, arrayType);
+            break;
+        
+        // Add additional cases for other types as needed
+
+        default:
+            // Handle unknown type or log an error
+            break;
+    }
+
+    writer.WriteEndElement();
+}
+
+static void ConvertSubrangeTypeToXml(XmlWriter writer, SubrangeTypeProperties subrangeType)
+{
+    // Implement conversion logic for SubrangeTypeProperties
+    writer.WriteAttributeString("minRange", subrangeType.MinRange.ToString());
+    writer.WriteAttributeString("maxRange", subrangeType.MaxRange.ToString());
+}
+
+static void ConvertScalarTypeToXml(XmlWriter writer, ScalarTypeProperties scalarType)
+{
+    // Implement conversion logic for ScalarTypeProperties
+    writer.WriteAttributeString("minRange", scalarType.MinRange.ToString());
+    writer.WriteAttributeString("maxRange", scalarType.MaxRange.ToString());
+    writer.WriteAttributeString("isSigned", scalarType.IsSigned.ToString());
+}
+
+static void ConvertRecordTypeToXml(XmlWriter writer, RecordTypeProperties recordType)
+{
+    // Implement conversion logic for RecordTypeProperties
+    foreach (var field in recordType.Fields)
+    {
+        writer.WriteStartElement("FIELD");
+        writer.WriteAttributeString("name", field.Item1);
+        writer.WriteAttributeString("type", field.Item2.ToString());
+        writer.WriteEndElement();
+    }
+}
+
+static void ConvertEnumerationTypeToXml(XmlWriter writer, EnumerationTypeProperties enumerationType)
+{
+    // Implement conversion logic for EnumerationTypeProperties
+    foreach (var constant in enumerationType.EnumerationConstants)
+    {
+        writer.WriteElementString("CONSTANT", constant);
+    }
+}
+
+static void ConvertArrayTypeToXml(XmlWriter writer, ArrayTypeProperties arrayType)
+{
+    // Implement conversion logic for ArrayTypeProperties
+    writer.WriteAttributeString("size", arrayType.Size.ToString());
+    writer.WriteAttributeString("elementType", arrayType.ElementType.ToString());
+}
