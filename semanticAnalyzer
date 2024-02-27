@@ -62,3 +62,117 @@ namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer
         public ISymTabScopeResolver Scopes { get; set; }
     }
 }
+public class TypeResolver : OMLParserBaseVisitor<object>
+{
+    private readonly ISymTabScopeResolver symbolTable;
+
+    public TypeResolver(ISymTabScopeResolver symbolTable)
+    {
+        this.symbolTable = symbolTable ?? throw new ArgumentNullException(nameof(symbolTable));
+    }
+
+    public override object VisitAssignment(OMLParser.AssignmentContext context)
+    {
+        // Resolve types for assignment statements
+        IAstNode leftSide = (IAstNode)Visit(context.variable());
+        IAstNode rightSide = (IAstNode)Visit(context.expression());
+
+        // Perform type checking and set type information in AstNodeProperties
+        if (leftSide.TypeSpec == null || rightSide.TypeSpec == null)
+        {
+            // Handle type resolution errors
+            // You may want to report an error using the SemanticAnalyzer.ReportError method
+            return null;
+        }
+
+        if (!leftSide.TypeSpec.Equals(rightSide.TypeSpec))
+        {
+            // Handle type mismatch errors
+            // You may want to report an error using the SemanticAnalyzer.ReportError method
+        }
+
+        return null;
+    }
+
+    public override object VisitVariable(OMLParser.VariableContext context)
+    {
+        string variableName = context.ID().GetText();
+
+        // Example: Resolve types for variable references
+        ISymbolTableEntry variableEntry = symbolTable.Lookup(variableName);
+
+        if (variableEntry == null)
+        {
+            // Handle undeclared variable errors
+            // You may want to report an error using the SemanticAnalyzer.ReportError method
+            return null;
+        }
+
+        // Set the type information in AstNodeProperties
+        AstNodeProperties properties = new AstNodeProperties();
+        properties.TypeSpec = variableEntry.TypeSpec;
+
+        return properties;
+    }
+
+    // Add similar methods for other syntax constructs that involve type resolution
+    // You may override Visit methods for different grammar rules as needed
+}
+
+public class SemanticAnalyzer
+{
+    private OMLParser parser;
+
+    public SemanticAnalyzer(OMLParser parser)
+    {
+        this.parser = parser;
+    }
+
+    public SemanticContext BuildContext(string source)
+    {
+        // Step 1: Build Parse Tree
+        OMLLexer lexer = new OMLLexer(new AntlrInputStream(source));
+        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        parser = new OMLParser(tokens);
+        parser.RemoveErrorListeners();
+        parser.AddErrorListener(new OMLErrorListener());
+
+        OMLParser.StartRuleContext startRule = parser.startRule();
+
+        // Step 2: Initialize components
+        AstBuildingVisitor astBuilder = new AstBuildingVisitor();
+        TypeResolver typeResolver = new TypeResolver();
+        SymTabScopeResolver symTabScopeResolver = new SymTabScopeResolver();
+        SemanticAnalyzer semanticAnalyzer = new SemanticAnalyzer(parser);
+
+        // Step 3: Build AST
+        IAstNode astRoot = astBuilder.VisitStartRule(startRule);
+
+        // Step 4: Resolve Types
+        typeResolver.Visit(astRoot);
+
+        // Step 5: Resolve Symbol Table Scopes
+        symTabScopeResolver.ResolveScopes(astRoot);
+
+        // Step 6: Report Errors
+        List<ErrorContext> errorContexts = OMLErrorsListener.GetErrors();
+        foreach (var errorContext in errorContexts)
+        {
+            semanticAnalyzer.ReportError(errorContext);
+        }
+
+        // Step 7: Return SemanticContext
+        return new SemanticContext
+        {
+            Ast = astRoot,
+            Scopes = symTabScopeResolver
+        };
+    }
+
+    public void ReportError(ErrorContext errorContext)
+    {
+        // Implement error reporting logic based on the severity level
+        Console.WriteLine($"Error at Line {errorContext.Line}, Position {errorContext.Start}-{errorContext.End}: {errorContext.Message}");
+    }
+}
+
