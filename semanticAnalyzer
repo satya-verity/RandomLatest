@@ -1,0 +1,64 @@
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer
+{
+    public enum SeverityLevel
+    {
+        ERROR,
+        WARNING
+    }
+
+    public class ErrorContext
+    {
+        public int Line { get; set; }
+        public int Start { get; set; }
+        public int End { get; set; }
+        public string Message { get; set; }
+        public SeverityLevel Severity { get; set; }
+    }
+
+    public interface ISymTabScopeResolver
+    {
+        // Define the methods needed for symbol table resolution
+    }
+
+    public class AstBuildingVisitor : OMLParserBaseVisitor<IAstNode>
+    {
+        // Implement methods to build AST
+    }
+
+    public class TypeResolver : OMLParserBaseVisitor<Type>
+    {
+        // Implement methods to resolve types
+    }
+
+    public class SymTabScopeResolver : ISymTabScopeResolver
+    {
+        // Implement methods for symbol table resolution
+    }
+
+    public class SemanticAnalyzer
+    {
+        private OMLParser parser;
+
+        public SemanticAnalyzer(OMLParser parser)
+        {
+            this.parser = parser;
+        }
+
+        public SemanticContext BuildContext(string source)
+        {
+            // Implement the entire semantic analysis process, including building the parse tree, constructing AST, and generating the symbol table
+            // Return a SemanticContext object with AST and symbol table
+        }
+
+        public void ReportError(ErrorContext errorContext)
+        {
+            // Implement error reporting based on the severity level
+        }
+    }
+
+    public class SemanticContext
+    {
+        public IAstNode Ast { get; set; }
+        public ISymTabScopeResolver Scopes { get; set; }
+    }
+}
