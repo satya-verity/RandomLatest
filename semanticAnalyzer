@@ -175,4 +175,46 @@ public class SemanticAnalyzer
         Console.WriteLine($"Error at Line {errorContext.Line}, Position {errorContext.Start}-{errorContext.End}: {errorContext.Message}");
     }
 }
+// AstBuildingVisitor.cs
+using Antlr4.Runtime.Misc;
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.TypeProperties;
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.Types;
+using System;
+using System.Collections.Generic;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder
+{
+    public class AstBuildingVisitor : OMLParserBaseVisitor<IAstNode>
+    {
+        private readonly AstFactory astFactory;
+        private readonly ISymTabScopeResolver scopeResolver;
+        private readonly TypeResolver typeResolver;
+
+        public AstBuildingVisitor(AstFactory astFactory, ISymTabScopeResolver scopeResolver, TypeResolver typeResolver)
+        {
+            this.astFactory = astFactory ?? throw new ArgumentNullException(nameof(astFactory));
+            this.scopeResolver = scopeResolver ?? throw new ArgumentNullException(nameof(scopeResolver));
+            this.typeResolver = typeResolver ?? throw new ArgumentNullException(nameof(typeResolver));
+        }
+
+        // Override methods for visiting different types of parse tree nodes
+
+        public override IAstNode VisitStartRule([NotNull] OMLParser.StartRuleContext context)
+        {
+            // Implementation for visiting the start rule
+            // Create the root node of your AST here
+            return base.VisitStartRule(context);
+        }
+
+        // Override other Visit methods for specific parse tree nodes
+
+        // Example:
+        // public override IAstNode VisitSomeRule([NotNull] OMLParser.SomeRuleContext context)
+        // {
+        //     // Implementation for visiting a specific rule
+        //     // Use astFactory, scopeResolver, typeResolver to build your AST
+        //     return base.VisitSomeRule(context);
+        // }
+    }
+}
 
