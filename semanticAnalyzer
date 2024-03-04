@@ -10,43 +10,42 @@ using System.Threading.Tasks;
 
 namespace MacroRunner.Frontend.SemanticAnalyzer
 {
-    public class OMLSemanticAnalyzer
+    public class SemanticAnalyzer
     {
-        public class SemanticAnalyzer
+        private readonly OMLErrorListener errorsListener;
+        private readonly AstBuildingVisitor astBuilder;
+
+        public SemanticAnalyzer(OMLErrorListener errorsListener, AstBuildingVisitor astBuilder)
         {
-            private readonly OMLErrorListener errorsListener;
-            private readonly AstBuildingVisitor astBuilder;
+            this.errorsListener = errorsListener ?? throw new ArgumentNullException(nameof(errorsListener));
+            this.astBuilder = astBuilder ?? throw new ArgumentNullException(nameof(astBuilder));
+        }
 
-            public SemanticAnalyzer(OMLErrorListener errorsListener, AstBuildingVisitor astBuilder)
-            {
-                this.errorsListener = errorsListener ?? throw new ArgumentNullException(nameof(errorsListener));
-                this.astBuilder = astBuilder ?? throw new ArgumentNullException(nameof(astBuilder));
-            }
+        public SemanticContext BuildContext(string source)
+        {
+            OMLLexer lexer = new OMLLexer(new AntlrInputStream(source));
+            CommonTokenStream tokens = new CommonTokenStream(lexer);
+            OMLParser parser = new OMLParser(tokens);
 
-            public SemanticContext BuildContext(string source)
-            {
-                OMLLexer lexer = new OMLLexer(new AntlrInputStream(source));
-                CommonTokenStream tokens = new CommonTokenStream(lexer);
-                OMLParser parser = new OMLParser(tokens);
+            parser.RemoveErrorListeners();
+            parser.AddErrorListener(errorsListener);
 
-                parser.RemoveErrorListeners();
-                parser.AddErrorListener(errorsListener);
+            // Invoke the start rule of the parser to build the parse tree
+            var parseTree = parser.startRule();
 
-                // Invoke the start rule of the parser to build the parse tree
-                var parseTree = parser.startRule();
+            IAstNode ast = astBuilder.VisitStartRule(parseTree);
 
-                IAstNode ast = astBuilder.VisitStartRule(parseTree);
+            return new SemanticContext(ast, astBuilder.Scopes);
+        }
 
-                return new SemanticContext(ast, astBuilder.Scopes);
-            }
-
-            public void ReportError(ErrorContext errorContext)
-            {
-                errorsListener.ReportError(errorContext);
-            }
+        public void ReportError(ErrorContext errorContext)
+        {
+            errorsListener.ReportError(errorContext);
         }
     }
 }
+
+
 using OCLCMacroLanguage.Frontend.SemanticAnalyzer;
 using System;
 using System.Collections.Generic;
