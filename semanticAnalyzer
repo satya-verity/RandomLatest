@@ -1,296 +1,284 @@
-namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer
-{
-    public enum SeverityLevel
-    {
-        ERROR,
-        WARNING
-    }
+using Antlr4.Runtime;
+using OCLCMacroLanguage.Frontend.Parser;
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer;
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer.OMLSymbolTable;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-    public class ErrorContext
+namespace MacroRunner.Frontend.SemanticAnalyzer
+{
+    public class OMLSemanticAnalyzer
     {
+        public class SemanticAnalyzer
+        {
+            private readonly OMLErrorListener errorsListener;
+            private readonly AstBuildingVisitor astBuilder;
+
+            public SemanticAnalyzer(OMLErrorListener errorsListener, AstBuildingVisitor astBuilder)
+            {
+                this.errorsListener = errorsListener ?? throw new ArgumentNullException(nameof(errorsListener));
+                this.astBuilder = astBuilder ?? throw new ArgumentNullException(nameof(astBuilder));
+            }
+
+            public SemanticContext BuildContext(string source)
+            {
+                OMLLexer lexer = new OMLLexer(new AntlrInputStream(source));
+                CommonTokenStream tokens = new CommonTokenStream(lexer);
+                OMLParser parser = new OMLParser(tokens);
+
+                parser.RemoveErrorListeners();
+                parser.AddErrorListener(errorsListener);
+
+                // Invoke the start rule of the parser to build the parse tree
+                var parseTree = parser.startRule();
+
+                IAstNode ast = astBuilder.VisitStartRule(parseTree);
+
+                return new SemanticContext(ast, astBuilder.Scopes);
+            }
+
+            public void ReportError(ErrorContext errorContext)
+            {
+                errorsListener.ReportError(errorContext);
+            }
+        }
+    }
+}
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace MacroRunner.Frontend.SemanticAnalyzer
+{
+    public class SemanticContext
+    {     
+        public IAstNode Ast { get; set; }
+        public ISymbolTableScopeResolver Scopes { get; set; }
+
+        public SemanticContext(IAstNode ast, ISymbolTableScopeResolver scopes)
+        {
+            Ast = ast;
+            Scopes = scopes;
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace MacroRunner.Frontend.SemanticAnalyzer
+{
+    public class ErrorContext
+    {      
         public int Line { get; set; }
         public int Start { get; set; }
         public int End { get; set; }
         public string Message { get; set; }
         public SeverityLevel Severity { get; set; }
-    }
 
-    public interface ISymTabScopeResolver
-    {
-        // Define the methods needed for symbol table resolution
-    }
-
-    public class AstBuildingVisitor : OMLParserBaseVisitor<IAstNode>
-    {
-        // Implement methods to build AST
-    }
-
-    public class TypeResolver : OMLParserBaseVisitor<Type>
-    {
-        // Implement methods to resolve types
-    }
-
-    public class SymTabScopeResolver : ISymTabScopeResolver
-    {
-        // Implement methods for symbol table resolution
-    }
-
-    public class SemanticAnalyzer
-    {
-        private OMLParser parser;
-
-        public SemanticAnalyzer(OMLParser parser)
+        public ErrorContext(int line, int start, int end, string message, SeverityLevel severity)
         {
-            this.parser = parser;
+            Line = line;
+            Start = start;
+            End = end;
+            Message = message;
+            Severity = severity;
         }
 
-        public SemanticContext BuildContext(string source)
-        {
-            // Implement the entire semantic analysis process, including building the parse tree, constructing AST, and generating the symbol table
-            // Return a SemanticContext object with AST and symbol table
-        }
-
-        public void ReportError(ErrorContext errorContext)
-        {
-            // Implement error reporting based on the severity level
-        }
-    }
-
-    public class SemanticContext
-    {
-        public IAstNode Ast { get; set; }
-        public ISymTabScopeResolver Scopes { get; set; }
     }
 }
-public class TypeResolver : OMLParserBaseVisitor<object>
-{
-    private readonly ISymTabScopeResolver symbolTable;
-
-    public TypeResolver(ISymTabScopeResolver symbolTable)
-    {
-        this.symbolTable = symbolTable ?? throw new ArgumentNullException(nameof(symbolTable));
-    }
-
-    public override object VisitAssignment(OMLParser.AssignmentContext context)
-    {
-        // Resolve types for assignment statements
-        IAstNode leftSide = (IAstNode)Visit(context.variable());
-        IAstNode rightSide = (IAstNode)Visit(context.expression());
-
-        // Perform type checking and set type information in AstNodeProperties
-        if (leftSide.TypeSpec == null || rightSide.TypeSpec == null)
-        {
-            // Handle type resolution errors
-            // You may want to report an error using the SemanticAnalyzer.ReportError method
-            return null;
-        }
-
-        if (!leftSide.TypeSpec.Equals(rightSide.TypeSpec))
-        {
-            // Handle type mismatch errors
-            // You may want to report an error using the SemanticAnalyzer.ReportError method
-        }
-
-        return null;
-    }
-
-    public override object VisitVariable(OMLParser.VariableContext context)
-    {
-        string variableName = context.ID().GetText();
-
-        // Example: Resolve types for variable references
-        ISymbolTableEntry variableEntry = symbolTable.Lookup(variableName);
-
-        if (variableEntry == null)
-        {
-            // Handle undeclared variable errors
-            // You may want to report an error using the SemanticAnalyzer.ReportError method
-            return null;
-        }
-
-        // Set the type information in AstNodeProperties
-        AstNodeProperties properties = new AstNodeProperties();
-        properties.TypeSpec = variableEntry.TypeSpec;
-
-        return properties;
-    }
-
-    // Add similar methods for other syntax constructs that involve type resolution
-    // You may override Visit methods for different grammar rules as needed
-}
-
-public class SemanticAnalyzer
-{
-    private OMLParser parser;
-
-    public SemanticAnalyzer(OMLParser parser)
-    {
-        this.parser = parser;
-    }
-
-    public SemanticContext BuildContext(string source)
-    {
-        // Step 1: Build Parse Tree
-        OMLLexer lexer = new OMLLexer(new AntlrInputStream(source));
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
-        parser = new OMLParser(tokens);
-        parser.RemoveErrorListeners();
-        parser.AddErrorListener(new OMLErrorListener());
-
-        OMLParser.StartRuleContext startRule = parser.startRule();
-
-        // Step 2: Initialize components
-        AstBuildingVisitor astBuilder = new AstBuildingVisitor();
-        TypeResolver typeResolver = new TypeResolver();
-        SymTabScopeResolver symTabScopeResolver = new SymTabScopeResolver();
-        SemanticAnalyzer semanticAnalyzer = new SemanticAnalyzer(parser);
-
-        // Step 3: Build AST
-        IAstNode astRoot = astBuilder.VisitStartRule(startRule);
-
-        // Step 4: Resolve Types
-        typeResolver.Visit(astRoot);
-
-        // Step 5: Resolve Symbol Table Scopes
-        symTabScopeResolver.ResolveScopes(astRoot);
-
-        // Step 6: Report Errors
-        List<ErrorContext> errorContexts = OMLErrorsListener.GetErrors();
-        foreach (var errorContext in errorContexts)
-        {
-            semanticAnalyzer.ReportError(errorContext);
-        }
-
-        // Step 7: Return SemanticContext
-        return new SemanticContext
-        {
-            Ast = astRoot,
-            Scopes = symTabScopeResolver
-        };
-    }
-
-    public void ReportError(ErrorContext errorContext)
-    {
-        // Implement error reporting logic based on the severity level
-        Console.WriteLine($"Error at Line {errorContext.Line}, Position {errorContext.Start}-{errorContext.End}: {errorContext.Message}");
-    }
-}
-// AstBuildingVisitor.cs
 using Antlr4.Runtime.Misc;
-using OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.TypeProperties;
-using OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.Types;
+using OCLCMacroLanguage.Frontend.Parser;
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder
+namespace MacroRunner.Frontend.SemanticAnalyzer
 {
-    public class AstBuildingVisitor : OMLParserBaseVisitor<IAstNode>
+    public class AstBuildingVisitor: OMLParserBaseVisitor<IAstNode>
     {
         private readonly AstFactory astFactory;
-        private readonly ISymTabScopeResolver scopeResolver;
         private readonly TypeResolver typeResolver;
+        public ISymbolTableScopeResolver Scopes { get; }
 
-        public AstBuildingVisitor(AstFactory astFactory, ISymTabScopeResolver scopeResolver, TypeResolver typeResolver)
+
+        public AstBuildingVisitor(AstFactory astFactory, ISymbolTableScopeResolver scopeResolver, TypeResolver typeResolver)
         {
             this.astFactory = astFactory ?? throw new ArgumentNullException(nameof(astFactory));
-            this.scopeResolver = scopeResolver ?? throw new ArgumentNullException(nameof(scopeResolver));
+            this.Scopes = scopeResolver ?? throw new ArgumentNullException(nameof(scopeResolver));
             this.typeResolver = typeResolver ?? throw new ArgumentNullException(nameof(typeResolver));
         }
 
-        // Override methods for visiting different types of parse tree nodes
-
         public override IAstNode VisitStartRule([NotNull] OMLParser.StartRuleContext context)
         {
-            // Implementation for visiting the start rule
-            // Create the root node of your AST here
             return base.VisitStartRule(context);
         }
-
-        // Override other Visit methods for specific parse tree nodes
-
-        // Example:
-        // public override IAstNode VisitSomeRule([NotNull] OMLParser.SomeRuleContext context)
-        // {
-        //     // Implementation for visiting a specific rule
-        //     // Use astFactory, scopeResolver, typeResolver to build your AST
-        //     return base.VisitSomeRule(context);
-        // }
     }
 }
-
-using Antlr4.Runtime;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer.OMLSymbolTable;
 
 namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer
 {
-    public class OMLErrorsListener : BaseErrorListener
+    public interface ISymbolTableScopeResolver
+    {
+        string ModuleId { get; }
+        void SetModuleName(string moduleName);
+        void UseMemoryContext(MemoryScope memoryScope);
+        MemoryScope GetActiveMemoryScope();
+        ISymbolTable CreateFreshProcedureContext();
+        ISymbolTable CreateCustomTypeContext();
+        ISymbolTableEntry EnterActive(string name);
+        ISymbolTableEntry Lookup(string name);
+        ISymbolTableEntry LookupInScope(MemoryScope scope, string name);
+        ISymbolTable GetMemoryContext(MemoryScope memoryScope);
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace MacroRunner.Frontend.SemanticAnalyzer
+{    public enum SeverityLevel
+    {
+        ERROR,
+        WARNING
+    }
+}
+using Antlr4.Runtime;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace MacroRunner.Frontend.SemanticAnalyzer
+{
+    public class OMLErrorListener : BaseErrorListener
     {
         private readonly ErrorPostProcessor errorPostProcessor;
 
-        public OMLErrorsListener(ErrorPostProcessor errorPostProcessor)
+        public OMLErrorListener(ErrorPostProcessor errorPostProcessor)
         {
             this.errorPostProcessor = errorPostProcessor ?? throw new ArgumentNullException(nameof(errorPostProcessor));
         }
 
-        public override void SyntaxError(IRecognizer recognizer, IToken offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
+        public override void SyntaxError(TextWriter output, IRecognizer recognizer, IToken offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
         {
-            // Transform the ANTLR error message into a user-friendly error message
             string userFriendlyError = errorPostProcessor.TransformError(msg);
-
-            // Report the user-friendly error
             ReportError(new ErrorContext(line, charPositionInLine + 1, charPositionInLine + offendingSymbol.StopIndex - offendingSymbol.StartIndex + 2, userFriendlyError, SeverityLevel.ERROR));
-        }
-
-        private void ReportError(ErrorContext errorContext)
-        {
-            // Logic to report the error, e.g., store it for later retrieval or display to the user
-            // You can customize this based on your application's error handling mechanism.
-            Console.WriteLine($"Error at line {errorContext.Line}, column {errorContext.Start}-{errorContext.End}: {errorContext.Message}");
-        }
-    }
-}
-namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer
-{
-    public class SemanticAnalyzer
-    {
-        private readonly OMLErrorsListener errorsListener;
-        private readonly AstBuildingVisitor astBuilder;
-
-        public SemanticAnalyzer(OMLErrorsListener errorsListener, AstBuildingVisitor astBuilder)
-        {
-            this.errorsListener = errorsListener ?? throw new ArgumentNullException(nameof(errorsListener));
-            this.astBuilder = astBuilder ?? throw new ArgumentNullException(nameof(astBuilder));
-        }
-
-        public SemanticContext BuildContext(string source)
-        {
-            // Create a new instance of OMLParser with the source
-            OMLParser parser = new OMLParser(new AntlrInputStream(source));
-
-            // Attach the custom error listener to capture errors
-            parser.RemoveErrorListeners();
-            parser.AddErrorListener(errorsListener);
-
-            // Invoke the start rule of the parser to build the parse tree
-            var parseTree = parser.startRule();
-
-            // Use AstBuildingVisitor to build the AST and capture memory scopes
-            IAst ast = astBuilder.VisitStartRule(parseTree);
-
-            // Create a new SemanticContext with the AST and memory scopes
-            SemanticContext semanticContext = new SemanticContext(ast, astBuilder.Scopes);
-
-            return semanticContext;
         }
 
         public void ReportError(ErrorContext errorContext)
         {
-            // Report errors using the OMLErrorsListener
-            errorsListener.ReportError(errorContext);
+            Console.WriteLine($"Error at line {errorContext.Line}, column {errorContext.Start}-{errorContext.End}: {errorContext.Message}");
         }
     }
 }
+using OCLCMacroLanguage.Frontend.Parser;
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder;
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace MacroRunner.Frontend.SemanticAnalyzer
+{
+    public class TypeResolver : OMLParserBaseVisitor<object>
+    {
+        private readonly ISymbolTableScopeResolver symbolTable;
+
+        public TypeResolver(ISymbolTableScopeResolver symbolTable)
+        {
+            this.symbolTable = symbolTable ?? throw new ArgumentNullException(nameof(symbolTable));
+        }       
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+
+namespace MacroRunner.Frontend.SemanticAnalyzer
+{
+    public class ErrorPostProcessor
+    {
+        public string TransformError(string antlrError)
+        {
+            string lineNumber = ExtractLineNumber(antlrError);
+            string columnNumber = ExtractColumnNumber(antlrError);
+            string errorMessage = ExtractErrorMessage(antlrError);
+
+            string userFriendlyError = $"Error at line {lineNumber}, column {columnNumber}: {errorMessage}";
+
+            return userFriendlyError;
+        }
+
+        private string ExtractLineNumber(string antlrError)
+        {
+            Match match = Regex.Match(antlrError, @"line (\d+)");
+            return match.Success ? match.Groups[1].Value : "N/A";
+        }
+
+        private string ExtractColumnNumber(string antlrError)
+        {
+            Match match = Regex.Match(antlrError, @"column (\d+)");
+            return match.Success ? match.Groups[1].Value : "N/A";
+        }
+
+        private string ExtractErrorMessage(string antlrError)
+        {
+            Match match = Regex.Match(antlrError, @"message: (.+)");
+            return match.Success ? match.Groups[1].Value : "Unknown error";
+        }
+    }
+}
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder;
+using System.Collections.Generic;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer
+{
+    public interface IAstNode
+    {
+        AstNodeType Type { get; }
+        IAstNode Parent { get; set; }
+        IEnumerable<IAstNode> Children { get; }
+        ITypeSpec TypeSpec { get; set; }
+        AstNodeProperties Properties { get; set; }
+
+        void AddChild(IAstNode child);
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer
+{
+    public interface IAst
+    {
+        IAstNode Root { get; }
+    }
+}
+
 
 
