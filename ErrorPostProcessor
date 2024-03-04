@@ -1,0 +1,42 @@
+using System;
+using System.Text.RegularExpressions;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer
+{
+    public class ErrorPostProcessor
+    {
+        public string TransformError(string antlrError)
+        {
+            // Use regular expressions to extract information from the ANTLR error message
+            string lineNumber = ExtractLineNumber(antlrError);
+            string columnNumber = ExtractColumnNumber(antlrError);
+            string errorMessage = ExtractErrorMessage(antlrError);
+
+            // Construct a user-friendly error message
+            string userFriendlyError = $"Error at line {lineNumber}, column {columnNumber}: {errorMessage}";
+
+            return userFriendlyError;
+        }
+
+        private string ExtractLineNumber(string antlrError)
+        {
+            // Use regex to extract the line number from the ANTLR error message
+            Match match = Regex.Match(antlrError, @"line (\d+)");
+            return match.Success ? match.Groups[1].Value : "N/A";
+        }
+
+        private string ExtractColumnNumber(string antlrError)
+        {
+            // Use regex to extract the column number from the ANTLR error message
+            Match match = Regex.Match(antlrError, @"column (\d+)");
+            return match.Success ? match.Groups[1].Value : "N/A";
+        }
+
+        private string ExtractErrorMessage(string antlrError)
+        {
+            // Use regex to extract the error message from the ANTLR error message
+            Match match = Regex.Match(antlrError, @"message: (.+)");
+            return match.Success ? match.Groups[1].Value : "Unknown error";
+        }
+    }
+}
