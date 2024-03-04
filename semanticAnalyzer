@@ -218,3 +218,38 @@ namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder
     }
 }
 
+using Antlr4.Runtime;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer
+{
+    public class OMLErrorsListener : BaseErrorListener
+    {
+        private readonly ErrorPostProcessor errorPostProcessor;
+
+        public OMLErrorsListener(ErrorPostProcessor errorPostProcessor)
+        {
+            this.errorPostProcessor = errorPostProcessor ?? throw new ArgumentNullException(nameof(errorPostProcessor));
+        }
+
+        public override void SyntaxError(IRecognizer recognizer, IToken offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
+        {
+            // Transform the ANTLR error message into a user-friendly error message
+            string userFriendlyError = errorPostProcessor.TransformError(msg);
+
+            // Report the user-friendly error
+            ReportError(new ErrorContext(line, charPositionInLine + 1, charPositionInLine + offendingSymbol.StopIndex - offendingSymbol.StartIndex + 2, userFriendlyError, SeverityLevel.ERROR));
+        }
+
+        private void ReportError(ErrorContext errorContext)
+        {
+            // Logic to report the error, e.g., store it for later retrieval or display to the user
+            // You can customize this based on your application's error handling mechanism.
+            Console.WriteLine($"Error at line {errorContext.Line}, column {errorContext.Start}-{errorContext.End}: {errorContext.Message}");
+        }
+    }
+}
+
+
