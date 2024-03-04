@@ -251,5 +251,46 @@ namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer
         }
     }
 }
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer
+{
+    public class SemanticAnalyzer
+    {
+        private readonly OMLErrorsListener errorsListener;
+        private readonly AstBuildingVisitor astBuilder;
+
+        public SemanticAnalyzer(OMLErrorsListener errorsListener, AstBuildingVisitor astBuilder)
+        {
+            this.errorsListener = errorsListener ?? throw new ArgumentNullException(nameof(errorsListener));
+            this.astBuilder = astBuilder ?? throw new ArgumentNullException(nameof(astBuilder));
+        }
+
+        public SemanticContext BuildContext(string source)
+        {
+            // Create a new instance of OMLParser with the source
+            OMLParser parser = new OMLParser(new AntlrInputStream(source));
+
+            // Attach the custom error listener to capture errors
+            parser.RemoveErrorListeners();
+            parser.AddErrorListener(errorsListener);
+
+            // Invoke the start rule of the parser to build the parse tree
+            var parseTree = parser.startRule();
+
+            // Use AstBuildingVisitor to build the AST and capture memory scopes
+            IAst ast = astBuilder.VisitStartRule(parseTree);
+
+            // Create a new SemanticContext with the AST and memory scopes
+            SemanticContext semanticContext = new SemanticContext(ast, astBuilder.Scopes);
+
+            return semanticContext;
+        }
+
+        public void ReportError(ErrorContext errorContext)
+        {
+            // Report errors using the OMLErrorsListener
+            errorsListener.ReportError(errorContext);
+        }
+    }
+}
 
 
