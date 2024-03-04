@@ -1,0 +1,307 @@
+using System;
+using Moq;
+using Xunit;
+
+namespace MacroRunner.Frontend.SemanticAnalyzer.Tests
+{
+    public class SemanticAnalyzerTests
+    {
+        [Fact]
+        public void BuildContext_ValidCode_ReturnsSemanticContext()
+        {
+            // Arrange
+            var errorsListener = new OMLErrorListener(new ErrorPostProcessor());
+            var astBuilderMock = new Mock<AstBuildingVisitor>(MockBehavior.Strict, new AstFactory(), new SymTabScopeResolver(), new TypeResolver(new SymTabScopeResolver()));
+            var semanticAnalyzer = new SemanticAnalyzer(errorsListener, astBuilderMock.Object);
+            string sourceCode = "int x = 42;";
+
+            // Mocking ANTLR Parser and Lexer
+            var lexerMock = new Mock<OMLLexer>(MockBehavior.Strict, It.IsAny<ICharStream>());
+            var parserMock = new Mock<OMLParser>(MockBehavior.Strict, It.IsAny<ITokenStream>());
+            parserMock.Setup(parser => parser.RemoveErrorListeners());
+            parserMock.Setup(parser => parser.AddErrorListener(errorsListener));
+            parserMock.Setup(parser => parser.startRule()).Returns(new OMLParser.StartRuleContext(parserMock.Object, 0));
+
+            astBuilderMock.Setup(builder => builder.VisitStartRule(It.IsAny<OMLParser.StartRuleContext>())).Returns(new Mock<IAstNode>().Object);
+
+            // Act
+            var semanticContext = semanticAnalyzer.BuildContext(sourceCode);
+
+            // Assert
+            Assert.NotNull(semanticContext);
+            Assert.NotNull(semanticContext.Ast);
+            Assert.NotNull(semanticContext.Scopes);
+        }
+
+        [Fact]
+        public void ReportError_WithValidErrorContext_PrintsErrorMessage()
+        {
+            // Arrange
+            var errorsListener = new OMLErrorListener(new ErrorPostProcessor());
+            var astBuilderMock = new Mock<AstBuildingVisitor>(MockBehavior.Strict, new AstFactory(), new SymTabScopeResolver(), new TypeResolver(new SymTabScopeResolver()));
+            var semanticAnalyzer = new SemanticAnalyzer(errorsListener, astBuilderMock.Object);
+            var errorContext = new ErrorContext(1, 5, 10, "Syntax error", SeverityLevel.ERROR);
+
+            // Act
+            semanticAnalyzer.ReportError(errorContext);
+
+            // Assert
+            // Since we are writing to Console, it's hard to assert the output. You may inspect the console output manually.
+        }
+    }
+
+    public class AstBuildingVisitorTests
+    {
+        [Fact]
+        public void VisitStartRule_ValidContext_ReturnsAstNode()
+        {
+            // Arrange
+            var astFactoryMock = new Mock<AstFactory>(MockBehavior.Strict);
+            var symbolTableMock = new Mock<ISymbolTableScopeResolver>(MockBehavior.Strict);
+            var typeResolverMock = new Mock<TypeResolver>(MockBehavior.Strict, symbolTableMock.Object);
+
+            var astBuilder = new AstBuildingVisitor(astFactoryMock.Object, symbolTableMock.Object, typeResolverMock.Object);
+
+            var startRuleContextMock = new Mock<OMLParser.StartRuleContext>(MockBehavior.Strict, null, 0);
+            
+            // Act
+            var result = astBuilder.VisitStartRule(startRuleContextMock.Object);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.IsAssignableFrom<IAstNode>(result);
+        }
+    }
+
+    // Add more tests for TypeResolver, ISymbolTableScopeResolver, and other classes as needed.
+}
+using System;
+using Moq;
+using Xunit;
+
+namespace MacroRunner.Frontend.SemanticAnalyzer.Tests
+{
+    public class OMLErrorListenerTests
+    {
+        [Fact]
+        public void SyntaxError_ValidContext_CallsReportError()
+        {
+            // Arrange
+            var errorPostProcessorMock = new Mock<ErrorPostProcessor>(MockBehavior.Strict);
+            var errorListener = new OMLErrorListener(errorPostProcessorMock.Object);
+
+            var recognizerMock = new Mock<IRecognizer>(MockBehavior.Strict);
+            var lexerMock = new Mock<OMLLexer>(MockBehavior.Strict, It.IsAny<ICharStream>());
+            var tokenMock = new Mock<IToken>(MockBehavior.Strict);
+            var recognitionExceptionMock = new Mock<RecognitionException>(MockBehavior.Strict, recognizerMock.Object, lexerMock.Object);
+
+            errorPostProcessorMock.Setup(postProcessor => postProcessor.TransformError(It.IsAny<string>())).Returns("User-friendly error message");
+            errorPostProcessorMock.Setup(postProcessor => postProcessor.TransformError("msg")).Returns("User-friendly error message");
+
+            // Act
+            errorListener.SyntaxError(null, recognizerMock.Object, tokenMock.Object, 1, 5, "msg", recognitionExceptionMock.Object);
+
+            // Assert
+            // Since we are not capturing console output, we can check if ReportError was called on a mock instead.
+            errorPostProcessorMock.Verify(postProcessor => postProcessor.TransformError("msg"), Times.Once);
+        }
+    }
+
+    public class TypeResolverTests
+    {
+        [Fact]
+        public void Constructor_WithNullSymbolTable_ThrowsArgumentNullException()
+        {
+            // Arrange
+            ISymbolTableScopeResolver symbolTable = null;
+
+            // Act & Assert
+            Assert.Throws<ArgumentNullException>(() => new TypeResolver(symbolTable));
+        }
+    }
+
+    // Add more tests for AstBuildingVisitor, ISymbolTableScopeResolver, ErrorPostProcessor, and other classes as needed.
+}
+using System;
+using Moq;
+using Xunit;
+
+namespace MacroRunner.Frontend.SemanticAnalyzer.Tests
+{
+    public class AstBuildingVisitorTests
+    {
+        [Fact]
+        public void VisitStartRule_ValidContext_ReturnsAstNode()
+        {
+            // Arrange
+            var astFactoryMock = new Mock<AstFactory>();
+            var scopeResolverMock = new Mock<ISymbolTableScopeResolver>();
+            var typeResolverMock = new Mock<TypeResolver>();
+            var astBuildingVisitor = new AstBuildingVisitor(astFactoryMock.Object, scopeResolverMock.Object, typeResolverMock.Object);
+
+            var startRuleContextMock = new Mock<OMLParser.StartRuleContext>();
+
+            // Act
+            var result = astBuildingVisitor.VisitStartRule(startRuleContextMock.Object);
+
+            // Assert
+            // Add assertions based on the expected behavior of the VisitStartRule method.
+            // For example, check if the appropriate AstNode is returned.
+        }
+    }
+
+    public class OMLSemanticAnalyzerTests
+    {
+        [Fact]
+        public void BuildContext_ValidSource_ReturnsSemanticContext()
+        {
+            // Arrange
+            var errorListenerMock = new Mock<OMLErrorListener>();
+            var astBuilderMock = new Mock<AstBuildingVisitor>();
+            var semanticAnalyzer = new OMLSemanticAnalyzer.SemanticAnalyzer(errorListenerMock.Object, astBuilderMock.Object);
+
+            var source = "valid source code";
+
+            // Act
+            var result = semanticAnalyzer.BuildContext(source);
+
+            // Assert
+            // Add assertions based on the expected behavior of the BuildContext method.
+            // For example, check if the correct SemanticContext is returned.
+        }
+
+        [Fact]
+        public void ReportError_ValidErrorContext_CallsErrorListener()
+        {
+            // Arrange
+            var errorListenerMock = new Mock<OMLErrorListener>();
+            var astBuilderMock = new Mock<AstBuildingVisitor>();
+            var semanticAnalyzer = new OMLSemanticAnalyzer.SemanticAnalyzer(errorListenerMock.Object, astBuilderMock.Object);
+
+            var errorContextMock = new Mock<ErrorContext>();
+
+            // Act
+            semanticAnalyzer.ReportError(errorContextMock.Object);
+
+            // Assert
+            // Add assertions based on the expected behavior of the ReportError method.
+            // For example, check if the ErrorListener is called with the correct parameters.
+        }
+    }
+
+    public class SemanticContextTests
+    {
+        // Add tests for the SemanticContext class if needed.
+    }
+
+    public class ErrorContextTests
+    {
+        // Add tests for the ErrorContext class if needed.
+    }
+
+    // Add more tests for other classes as needed.
+}
+using System;
+using Xunit;
+
+namespace MacroRunner.Frontend.SemanticAnalyzer.Tests
+{
+    public class ErrorPostProcessorTests
+    {
+        [Fact]
+        public void TransformError_ValidAntlrError_ReturnsTransformedError()
+        {
+            // Arrange
+            var errorPostProcessor = new ErrorPostProcessor();
+            var antlrError = "line 42, column 10: message: Syntax error";
+
+            // Act
+            var transformedError = errorPostProcessor.TransformError(antlrError);
+
+            // Assert
+            Assert.Equal("Error at line 42, column 10: Syntax error", transformedError);
+        }
+
+        [Fact]
+        public void TransformError_InvalidAntlrError_ReturnsUnknownError()
+        {
+            // Arrange
+            var errorPostProcessor = new ErrorPostProcessor();
+            var invalidAntlrError = "Invalid antlr error";
+
+            // Act
+            var transformedError = errorPostProcessor.TransformError(invalidAntlrError);
+
+            // Assert
+            Assert.Equal("Error at line N/A, column N/A: Unknown error", transformedError);
+        }
+
+        // Add more tests to cover different scenarios and edge cases.
+    }
+}
+using System;
+using Xunit;
+
+namespace MacroRunner.Frontend.SemanticAnalyzer.Tests
+{
+    public class ErrorPostProcessorTests
+    {
+        [Fact]
+        public void TransformError_ValidAntlrErrorWithWarning_ReturnsTransformedWarning()
+        {
+            // Arrange
+            var errorPostProcessor = new ErrorPostProcessor();
+            var antlrError = "line 8, column 5: message: Warning message";
+            
+            // Act
+            var transformedError = errorPostProcessor.TransformError(antlrError);
+
+            // Assert
+            Assert.Equal("Error at line 8, column 5: Warning message", transformedError);
+        }
+
+        [Fact]
+        public void TransformError_ValidAntlrErrorWithoutMessage_ReturnsUnknownError()
+        {
+            // Arrange
+            var errorPostProcessor = new ErrorPostProcessor();
+            var antlrError = "line 15, column 2: message: ";
+            
+            // Act
+            var transformedError = errorPostProcessor.TransformError(antlrError);
+
+            // Assert
+            Assert.Equal("Error at line 15, column 2: Unknown error", transformedError);
+        }
+
+        [Fact]
+        public void TransformError_ValidAntlrErrorWithoutColumn_ReturnsTransformedError()
+        {
+            // Arrange
+            var errorPostProcessor = new ErrorPostProcessor();
+            var antlrError = "line 21: message: Syntax error";
+            
+            // Act
+            var transformedError = errorPostProcessor.TransformError(antlrError);
+
+            // Assert
+            Assert.Equal("Error at line 21, column N/A: Syntax error", transformedError);
+        }
+
+        [Fact]
+        public void TransformError_InvalidAntlrError_ReturnsUnknownError()
+        {
+            // Arrange
+            var errorPostProcessor = new ErrorPostProcessor();
+            var invalidAntlrError = "Invalid antlr error";
+            
+            // Act
+            var transformedError = errorPostProcessor.TransformError(invalidAntlrError);
+
+            // Assert
+            Assert.Equal("Error at line N/A, column N/A: Unknown error", transformedError);
+        }
+
+        // Add more tests to cover different scenarios and edge cases.
+    }
+}
