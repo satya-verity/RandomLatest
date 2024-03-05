@@ -458,3 +458,153 @@ namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer
     }
 }
 
+using System;
+using System.Xml;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Type
+{
+    public class ArrayTypeProperties : TypeSpecProperties
+    {
+        public ITypeSpec[] Index { get; }
+
+        public int Dimensions
+        {
+            get { return Index.Length; }
+        }
+
+        public ArrayTypeProperties(params ITypeSpec[] subranges)
+        {
+            if (subranges == null)
+            {
+                throw new ArgumentNullException(nameof(subranges));
+            }
+
+            int dimension = 0;
+            foreach (ITypeSpec subrange in subranges)
+            {
+                if (subrange.Form != TypeForm.SUBRANGE)
+                {
+                    throw new ArgumentException($"ArrayTypeProperties: invalid Subrange type for {dimension} dimension.");
+                }
+
+                dimension++;
+            }
+
+            this.Index = subranges;
+        }
+
+        public override void ConvertToXml(XmlWriter writer)
+        {
+            writer.WriteStartElement("ArrayTypeProperties");
+            foreach (var subrange in Index)
+            {
+                subrange.ConvertToXml(writer);
+            }
+            writer.WriteEndElement();
+        }
+    }
+}
+
+// EnumerationTypeProperties and RecordTypeProperties remain unchanged.
+
+using System;
+using System.Collections.Generic;
+using System.Xml;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Type
+{
+    public class EnumerationTypeProperties : TypeSpecProperties
+    {
+        public IEnumerable<string> Items { get; }
+
+        public EnumerationTypeProperties(IEnumerable<string> items)
+        {
+            if (items == null)
+            {
+                throw new ArgumentNullException(nameof(items));
+            }
+
+            this.Items = items;
+        }
+
+        public override void ConvertToXml(XmlWriter writer)
+        {
+            writer.WriteStartElement("EnumerationTypeProperties");
+            foreach (var item in Items)
+            {
+                writer.WriteElementString("Item", item);
+            }
+            writer.WriteEndElement();
+        }
+    }
+}
+
+using System;
+using System.Xml;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Type
+{
+    public class RecordTypeProperties : TypeSpecProperties
+    {
+        public ISymbolTable Fields { get; }
+
+        public RecordTypeProperties(ISymbolTable recordSymbolTable)
+        {
+            if (recordSymbolTable == null)
+            {
+                throw new ArgumentNullException(nameof(recordSymbolTable));
+            }
+
+            if (recordSymbolTable.Scope != MemoryScope.CUSTOM_TYPE)
+            {
+                throw new ArgumentException("RecordTypeProperties: invalid memory scope.");
+            }
+
+            this.Fields = recordSymbolTable;
+        }
+
+        public override void ConvertToXml(XmlWriter writer)
+        {
+            writer.WriteStartElement("RecordTypeProperties");
+            Fields.ConvertToXml(writer);
+            writer.WriteEndElement();
+        }
+    }
+}
+
+// ScalarTypeProperties also remains unchanged.
+
+// Adding implementation for SubrangeTypeProperties
+
+using System;
+using System.Xml;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Type
+{
+    public class SubrangeTypeProperties : TypeSpecProperties
+    {
+        private const string InvalidRangeMessage = "Min value must be less than Max value for the range.";
+
+        public int MinRange { get; }
+        public int MaxRange { get; }
+
+        public SubrangeTypeProperties(int minRange, int maxRange)
+        {
+            if (minRange >= maxRange)
+            {
+                throw new ArgumentException(InvalidRangeMessage);
+            }
+
+            MinRange = minRange;
+            MaxRange = maxRange;
+        }
+
+        public override void ConvertToXml(XmlWriter writer)
+        {
+            writer.WriteStartElement("SubrangeTypeProperties");
+            writer.WriteElementString("MinRange", MinRange.ToString());
+            writer.WriteElementString("MaxRange", MaxRange.ToString());
+            writer.WriteEndElement();
+        }
+    }
+}
