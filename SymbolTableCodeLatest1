@@ -308,14 +308,17 @@ using System;
 using System.Configuration;
 using System.Xml;
 
+using System;
+using System.Xml;
+
 namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Type
 {
     public class ScalarTypeProperties<T> : TypeSpecProperties
     {
-        private const string ResultIsUndefinedMessage = "Result is undefined for non numeric types";
+        private const string ResultIsUndefinedMessage = "Result is undefined for non-numeric types";
         private const string RangeShouldBeProvidedMessage = "Min and Max should be provided for numeric types.";
         private const string OnlyNumericTypesAreSupportedMessage = "Only numeric types are supported for min and max.";
-        private const string InvalidRangeMessage = "Min value must be less then Max value for type constraints.";
+        private const string InvalidRangeMessage = "Min value must be less than Max value for type constraints.";
 
         public T MinRange
         {
@@ -354,7 +357,7 @@ namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Typ
         {
             if (this.IsNumericType())
             {
-                throw new ArgumentException(ScalarTypeProperties<T>.RangeShouldBeProvidedMessage);
+                throw new ArgumentException(RangeShouldBeProvidedMessage);
             }
         }
 
@@ -362,12 +365,12 @@ namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Typ
         {
             if (!this.IsNumericType())
             {
-                throw new ArgumentException(ScalarTypeProperties<T>.OnlyNumericTypesAreSupportedMessage);
+                throw new ArgumentException(OnlyNumericTypesAreSupportedMessage);
             }
 
             if (!IsValidRange(minRange, maxRange))
             {
-                throw new ArgumentException(ScalarTypeProperties<T>.InvalidRangeMessage);
+                throw new ArgumentException(InvalidRangeMessage);
             }
 
             this.minRange = minRange;
@@ -377,9 +380,9 @@ namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Typ
         public bool IsNumericType()
         {
             return typeof(T) == typeof(int) ||
-            typeof(T) == typeof(long) ||
-            typeof(T) == typeof(float) ||
-            typeof(T) == typeof(double);
+                   typeof(T) == typeof(long) ||
+                   typeof(T) == typeof(float) ||
+                   typeof(T) == typeof(double);
         }
 
         private static bool IsValidRange(T min, T max)
@@ -402,13 +405,16 @@ namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Typ
             }
             else
             {
-                throw new InvalidOperationException(); 
+                throw new InvalidOperationException();
             }
         }
 
         public override void ConvertToXml(XmlWriter writer)
         {
-            throw new NotImplementedException();
+            writer.WriteStartElement("ScalarTypeProperties");
+            writer.WriteElementString("MinRange", MinRange.ToString());
+            writer.WriteElementString("MaxRange", MaxRange.ToString());
+            writer.WriteEndElement();
         }
     }
 }
