@@ -211,6 +211,7 @@ namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer
         ISymbolTable ProcedureSymbolTable { get; set; }
     }
 using System;
+using System.Xml;
 
 namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Type
 {
@@ -243,10 +244,17 @@ namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Typ
 
             this.Index = subranges;
         }
+
+        public override void ConvertToXml(XmlWriter writer)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
+
 using System;
 using System.Collections.Generic;
+using System.Xml;
 
 namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Type
 {
@@ -262,9 +270,15 @@ namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Typ
             }
 
             this.Items = items;
-        }      
+        }
+
+        public override void ConvertToXml(XmlWriter writer)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
+
 using System;
 
 namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Type
@@ -289,8 +303,10 @@ namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Typ
         }
     }
 }
+
 using System;
 using System.Configuration;
+using System.Xml;
 
 namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Type
 {
@@ -389,9 +405,16 @@ namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Typ
                 throw new InvalidOperationException(); 
             }
         }
+
+        public override void ConvertToXml(XmlWriter writer)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
+
 using System;
+using System.Xml;
 
 namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Type
 {
@@ -411,9 +434,27 @@ namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Typ
 
             MinRange = minRange;
             MaxRange = maxRange;
-        }     
+        }
+
+        public override void ConvertToXml(XmlWriter writer)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
 
 
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer
+{
+    public interface ITypeSpec
+    {
+        TypeForm Form { get; }
+        ISymbolTableEntry Identifier { get; }
+        ITypeSpec BaseType { get; }
+        TypeSpecProperties Properties { get; }
+
+        T GetProperties<T>() where T : TypeSpecProperties;
+
+    }
+}
 
