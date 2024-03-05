@@ -1,0 +1,419 @@
+using System.Collections.Generic;
+using System.Linq;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable
+{
+    public class SymbolTable : ISymbolTable
+    {
+        private Dictionary<string, ISymbolTableEntry> entries;
+
+        public MemoryScope Scope { get; set; }
+        public int NestingLevel { get; set; }
+        public IEnumerable<ISymbolTableEntry> Entries { get => entries.Values.ToList(); }
+
+        public SymbolTable(MemoryScope scope)
+        {
+            this.Scope = scope;
+            this.entries = new Dictionary<string,ISymbolTableEntry>();
+        }
+
+        public SymbolTable(MemoryScope scope, int nestingLevel): this(scope)
+        {
+            this.NestingLevel = nestingLevel;          
+        }     
+
+        public ISymbolTableEntry Enter(string name)
+        {
+            var entry = this.Lookup(name);
+            if (entry == null)
+            {
+                entry = new SymbolTableEntry(name, this);
+                this.entries.Add(name, entry);
+            }
+            return entry;
+        }
+
+        public ISymbolTableEntry Lookup(string name)
+        {
+            ISymbolTableEntry entry;
+            return this.entries.TryGetValue(name, out entry) ? entry : null;
+        }
+    }
+}
+using System.Collections.Generic;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable
+{
+    public class SymbolTableEntry : ISymbolTableEntry
+    {
+        private List<int> lineNumbers;
+        public string Name { get; }
+        public ISymbolTable SymbolTable { get; }
+        public Definition Definition { get; set; }
+        public ITypeSpec TypeSpec { get; set; }
+        public IEnumerable<int> LineNumbers { get => lineNumbers; }
+        public IPropertiesSet Properties { get; set; }
+
+        public SymbolTableEntry(string name, ISymbolTable symbolTable)
+        {
+            Name = name;
+            this.SymbolTable = symbolTable;
+            this.lineNumbers = new List<int>();
+        }
+
+        public void AppendLineNumber(int lineNumber)
+        {
+            this.lineNumbers.Add(lineNumber);
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable
+{
+    public class SymbolTableScopeResolver : ISymbolTableScopeResolver
+    {
+        public MemoryScope ActiveMemoryScope { get; private set; }
+        public string ModuleId { set; get; }
+        private Dictionary<MemoryScope, SymbolTable> symbolTables;
+        private Dictionary<MemoryScope, MemoryScope> parentScopes;
+
+
+        public SymbolTableScopeResolver()
+        {
+            InitializeScopes();
+            parentScopes = new Dictionary<MemoryScope, MemoryScope>
+            {
+                { MemoryScope.GLOBAL, MemoryScope.ROOT },
+                { MemoryScope.MODULE, MemoryScope.GLOBAL },
+                { MemoryScope.PROCEDURE,  MemoryScope.MODULE },
+                { MemoryScope.CUSTOM_TYPE,  MemoryScope.MODULE },
+                { MemoryScope.ROOT, MemoryScope.UNDEFINED }
+            };
+        }
+
+        private void InitializeScopes()
+        {
+            symbolTables = new Dictionary<MemoryScope, SymbolTable>
+            {
+                { MemoryScope.ROOT, new SymbolTable(MemoryScope.ROOT) },
+                { MemoryScope.GLOBAL, new SymbolTable(MemoryScope.GLOBAL) },
+                { MemoryScope.MODULE, new SymbolTable(MemoryScope.MODULE) }
+            };
+        }
+
+        public void SetModuleName(string moduleName)
+        {
+            this.ModuleId = moduleName;
+        }
+
+        public void UseMemoryContext(MemoryScope memoryScope)
+        {
+            this.ActiveMemoryScope = memoryScope;
+        }
+
+        private MemoryScope GetParentScope(MemoryScope memoryScope)
+        {
+            return parentScopes[memoryScope];
+        }
+
+        public MemoryScope GetActiveMemoryScope()
+        {
+            return this.ActiveMemoryScope;
+        }
+
+        public ISymbolTable CreateFreshProcedureContext()
+        {
+            var procedureScope = new SymbolTable(MemoryScope.PROCEDURE);
+            this.symbolTables[MemoryScope.PROCEDURE] = procedureScope;
+            return procedureScope;
+        }
+
+        public ISymbolTable CreateCustomTypeContext()
+        {
+            var customScope = new SymbolTable(MemoryScope.CUSTOM_TYPE);
+            this.symbolTables[MemoryScope.CUSTOM_TYPE] = customScope;
+            return customScope;
+        }
+
+        public ISymbolTableEntry EnterActive(string name)
+        {
+            SymbolTable symbolTable;
+            symbolTables.TryGetValue(ActiveMemoryScope, out symbolTable);
+            if (symbolTable == null) throw new InvalidOperationException($"Symbol table does not exist for scope {ActiveMemoryScope}");
+            return symbolTable.Enter(name);
+        }
+
+        public ISymbolTableEntry Lookup(string name)
+        {
+            MemoryScope scope = ActiveMemoryScope;
+            ISymbolTableEntry result = null;
+            while (result == null && scope != MemoryScope.UNDEFINED)
+            {
+                result = LookupInScope(scope, name);
+                scope = GetParentScope(scope);
+            }
+            return result;
+        }
+
+        public ISymbolTableEntry LookupInScope(MemoryScope scope, string name)
+        {
+            SymbolTable symbolTable;
+            symbolTables.TryGetValue(scope, out symbolTable);
+            return symbolTable?.Lookup(name);
+        }
+
+        public ISymbolTable GetMemoryContext(MemoryScope memoryScope)
+        {
+            return symbolTables[memoryScope];
+        }
+    }
+}
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable
+{
+    public class TypeSpec : ITypeSpec
+    {
+       
+        public TypeForm Form { get; }
+        public ISymbolTableEntry Identifier { get; }
+        public ITypeSpec BaseType { get; }
+        public TypeSpecProperties Properties { get; }
+
+        public TypeSpec(TypeForm form, ISymbolTableEntry identifier = null, TypeSpecProperties properties = null, ITypeSpec baseType = null)
+        {
+            this.Form = form;
+            this.Identifier = identifier;
+            this.BaseType = baseType;
+            this.Properties = properties;
+        }
+
+        public T GetProperties<T>() where T : TypeSpecProperties
+        {
+            return (T)this.Properties;
+        }
+    }
+}
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer
+{
+    public class SymbolTableEntryProperties: IPropertiesSet
+    {
+    }
+}
+    public class ConstantProperties: SymbolTableEntryProperties
+    {
+    }
+    public class VariableProperties: SymbolTableEntryProperties
+    {
+    }
+    public class ProcedureProperties: SymbolTableEntryProperties
+    {
+        ISymbolTable ProcedureSymbolTable { get; set; }
+    }
+using System;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Type
+{
+    public class ArrayTypeProperties : TypeSpecProperties
+    {
+        public ITypeSpec[] Index { get; }
+
+        public int Dimensions
+        {
+            get { return Index.Length; }
+        }
+
+        public ArrayTypeProperties(params ITypeSpec[] subranges)
+        {
+            if (subranges == null)
+            {
+                throw new ArgumentNullException(nameof(subranges));
+            }
+
+            int dimension = 0;
+            foreach(ITypeSpec subrange in subranges)
+            {
+                if (subrange.Form != TypeForm.SUBRANGE)
+                {
+                    throw new ArgumentException($"ArrayTypeProperties: invalid Subrange type for {dimension} dimension.");
+                }
+
+                dimension++;
+            }
+
+            this.Index = subranges;
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Type
+{
+    public class EnumerationTypeProperties : TypeSpecProperties
+    {
+        public IEnumerable<string> Items { get; }
+
+        public EnumerationTypeProperties(IEnumerable<string> items)
+        {
+            if(items == null)
+            {
+                throw new ArgumentNullException(nameof(items));
+            }
+
+            this.Items = items;
+        }      
+    }
+}
+using System;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Type
+{
+    public class RecordTypeProperties : TypeSpecProperties
+    {
+        public ISymbolTable Fields { get; }
+
+        public RecordTypeProperties(ISymbolTable recordSymbolTable)
+        {
+            if (recordSymbolTable == null)
+            {
+                throw new ArgumentNullException(nameof(recordSymbolTable));
+            }
+
+            if (recordSymbolTable.Scope != MemoryScope.CUSTOM_TYPE)
+            {
+                throw new ArgumentException("RecordTypeProperties: invalid memory scope.");
+            }
+
+            this.Fields = recordSymbolTable;
+        }
+    }
+}
+using System;
+using System.Configuration;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Type
+{
+    public class ScalarTypeProperties<T> : TypeSpecProperties
+    {
+        private const string ResultIsUndefinedMessage = "Result is undefined for non numeric types";
+        private const string RangeShouldBeProvidedMessage = "Min and Max should be provided for numeric types.";
+        private const string OnlyNumericTypesAreSupportedMessage = "Only numeric types are supported for min and max.";
+        private const string InvalidRangeMessage = "Min value must be less then Max value for type constraints.";
+
+        public T MinRange
+        {
+            get
+            {
+                if (this.IsNumericType())
+                {
+                    return this.minRange;
+                }
+                else
+                {
+                    throw new InvalidOperationException(ScalarTypeProperties<T>.ResultIsUndefinedMessage);
+                }
+            }
+        }
+
+        public T MaxRange
+        {
+            get
+            {
+                if (this.IsNumericType())
+                {
+                    return this.maxRange;
+                }
+                else
+                {
+                    throw new InvalidOperationException(ScalarTypeProperties<T>.ResultIsUndefinedMessage);
+                }
+            }
+        }
+
+        private T minRange;
+        private T maxRange;
+
+        public ScalarTypeProperties()
+        {
+            if (this.IsNumericType())
+            {
+                throw new ArgumentException(ScalarTypeProperties<T>.RangeShouldBeProvidedMessage);
+            }
+        }
+
+        public ScalarTypeProperties(T minRange, T maxRange)
+        {
+            if (!this.IsNumericType())
+            {
+                throw new ArgumentException(ScalarTypeProperties<T>.OnlyNumericTypesAreSupportedMessage);
+            }
+
+            if (!IsValidRange(minRange, maxRange))
+            {
+                throw new ArgumentException(ScalarTypeProperties<T>.InvalidRangeMessage);
+            }
+
+            this.minRange = minRange;
+            this.maxRange = maxRange;
+        }
+
+        public bool IsNumericType()
+        {
+            return typeof(T) == typeof(int) ||
+            typeof(T) == typeof(long) ||
+            typeof(T) == typeof(float) ||
+            typeof(T) == typeof(double);
+        }
+
+        private static bool IsValidRange(T min, T max)
+        {
+            if (typeof(T) == typeof(int))
+            {
+                return Convert.ToInt32(min) < Convert.ToInt32(max);
+            }
+            else if (typeof(T) == typeof(long))
+            {
+                return Convert.ToInt64(min) < Convert.ToInt64(max);
+            }
+            else if (typeof(T) == typeof(float))
+            {
+                return Convert.ToSingle(min) < Convert.ToSingle(max);
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return Convert.ToDouble(min) < Convert.ToDouble(max);
+            }
+            else
+            {
+                throw new InvalidOperationException(); 
+            }
+        }
+    }
+}
+using System;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Type
+{
+    public class SubrangeTypeProperties : TypeSpecProperties
+    {
+        private const string InvalidRangeMessage = "Min value must be less then Max value for the range.";
+
+        public int MinRange { get; }
+        public int MaxRange { get; }
+
+        public SubrangeTypeProperties(int minRange, int maxRange)
+        {
+            if (minRange >= maxRange)
+            {
+                throw new ArgumentException(SubrangeTypeProperties.InvalidRangeMessage);
+            }
+
+            MinRange = minRange;
+            MaxRange = maxRange;
+        }     
+    }
+}
+
+
+
