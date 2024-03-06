@@ -242,3 +242,205 @@ namespace MacroRunner.Frontend.SemanticAnalyzer
 }
 
 
+using System;
+using System.Collections.Generic;
+using Xunit;
+
+namespace MacroRunner.Frontend.SemanticAnalyzer.Tests
+{
+    public class ErrorPostProcessorTests
+    {
+        [Fact]
+        public void ProcessError_ValidError_TransformedSuccessfully()
+        {
+            // Arrange
+            var errorPostProcessor = new ErrorPostProcessor();
+            string antlrError = "extraneous input 'unexpected' expecting {expected}";
+
+            // Act
+            string result = errorPostProcessor.ProcessError(antlrError);
+
+            // Assert
+            Assert.Equal("Unexpected input 'unexpected', expected: expected.", result);
+        }
+
+        [Fact]
+        public void ProcessError_NoTransformationPattern_ReturnOriginalError()
+        {
+            // Arrange
+            var errorPostProcessor = new ErrorPostProcessor();
+            string antlrError = "Unknown error";
+
+            // Act
+            string result = errorPostProcessor.ProcessError(antlrError);
+
+            // Assert
+            Assert.Equal("Unknown error", result);
+        }
+
+        [Fact]
+        public void ProcessError_MultipleMappings_FirstMatchingPatternApplied()
+        {
+            // Arrange
+            var errorPostProcessor = new ErrorPostProcessor();
+            string antlrError = "no viable alternative at input 'unexpected'";
+
+            // Act
+            string result = errorPostProcessor.ProcessError(antlrError);
+
+            // Assert
+            Assert.Equal("Unable to recognize input starting with 'unexpected'.", result);
+        }
+
+        [Fact]
+        public void ProcessError_EmptyErrorMessage_ReturnOriginalError()
+        {
+            // Arrange
+            var errorPostProcessor = new ErrorPostProcessor();
+            string antlrError = string.Empty;
+
+            // Act
+            string result = errorPostProcessor.ProcessError(antlrError);
+
+            // Assert
+            Assert.Equal(string.Empty, result);
+        }
+
+        [Fact]
+        public void ProcessError_ErrorMessageWithLineNumberAndColumn_TransformedSuccessfully()
+        {
+            // Arrange
+            var errorPostProcessor = new ErrorPostProcessor();
+            string antlrError = "line 5 column 10 message: extraneous input 'unexpected' expecting {expected}";
+
+            // Act
+            string result = errorPostProcessor.ProcessError(antlrError);
+
+            // Assert
+            Assert.Equal("Error at line 5, column 10: Unexpected input 'unexpected', expected: expected.", result);
+        }
+
+        [Fact]
+        public void ProcessError_InvalidPattern_ReturnOriginalError()
+        {
+            // Arrange
+            var errorPostProcessor = new ErrorPostProcessor();
+            string antlrError = "Invalid antlr error message";
+
+            // Act
+            string result = errorPostProcessor.ProcessError(antlrError);
+
+            // Assert
+            Assert.Equal("Invalid antlr error message", result);
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using Xunit;
+
+namespace MacroRunner.Frontend.SemanticAnalyzer.Tests
+{
+    public class ErrorPostProcessorTests
+    {
+        // Existing tests...
+
+        [Fact]
+        public void ProcessError_ErrorMessageWithNoPatternMatch_ReturnOriginalError()
+        {
+            // Arrange
+            var errorPostProcessor = new ErrorPostProcessor();
+            string antlrError = "line 10 column 5 message: unexpected error";
+
+            // Act
+            string result = errorPostProcessor.ProcessError(antlrError);
+
+            // Assert
+            Assert.Equal("line 10 column 5 message: unexpected error", result);
+        }
+
+        [Fact]
+        public void TransformError_ValidError_TransformedSuccessfully()
+        {
+            // Arrange
+            var errorPostProcessor = new ErrorPostProcessor();
+            string antlrError = "line 7 column 15 message: extraneous input 'unexpected' expecting {expected}";
+
+            // Act
+            string result = errorPostProcessor.TransformError(antlrError);
+
+            // Assert
+            Assert.Equal("Error at line 7, column 15: Unexpected input 'unexpected', expected: expected.", result);
+        }
+
+        [Fact]
+        public void TransformError_EmptyErrorMessage_ReturnsUnknownError()
+        {
+            // Arrange
+            var errorPostProcessor = new ErrorPostProcessor();
+            string antlrError = "line 3 column 8 message: ";
+
+            // Act
+            string result = errorPostProcessor.TransformError(antlrError);
+
+            // Assert
+            Assert.Equal("Error at line 3, column 8: Unknown error", result);
+        }
+
+        [Fact]
+        public void TransformError_ErrorMessageWithNoLineNumber_ReturnsErrorWithNALineNumber()
+        {
+            // Arrange
+            var errorPostProcessor = new ErrorPostProcessor();
+            string antlrError = "column 5 message: no viable alternative at input 'unexpected'";
+
+            // Act
+            string result = errorPostProcessor.TransformError(antlrError);
+
+            // Assert
+            Assert.Equal("Error at line N/A, column 5: Unable to recognize input starting with 'unexpected'.", result);
+        }
+
+        [Fact]
+        public void TransformError_ErrorMessageWithNoColumnNumber_ReturnsErrorWithNAColumnNumber()
+        {
+            // Arrange
+            var errorPostProcessor = new ErrorPostProcessor();
+            string antlrError = "line 12 message: missing 'expected' at '\\n'";
+
+            // Act
+            string result = errorPostProcessor.TransformError(antlrError);
+
+            // Assert
+            Assert.Equal("Error at line 12, column N/A: Missing 'expected'.", result);
+        }
+
+        [Fact]
+        public void TransformError_ErrorMessageWithInvalidLineNumber_ReturnsErrorWithNALineNumber()
+        {
+            // Arrange
+            var errorPostProcessor = new ErrorPostProcessor();
+            string antlrError = "line invalid column 5 message: mismatched input 'unexpected' expecting {expected}";
+
+            // Act
+            string result = errorPostProcessor.TransformError(antlrError);
+
+            // Assert
+            Assert.Equal("Error at line N/A, column 5: Missing second operand in binary operation.", result);
+        }
+
+        [Fact]
+        public void TransformError_ErrorMessageWithInvalidColumnNumber_ReturnsErrorWithNAColumnNumber()
+        {
+            // Arrange
+            var errorPostProcessor = new ErrorPostProcessor();
+            string antlrError = "line 8 column invalid message: extraneous input 'unexpected' expecting {expected}";
+
+            // Act
+            string result = errorPostProcessor.TransformError(antlrError);
+
+            // Assert
+            Assert.Equal("Error at line 8, column N/A: Unexpected input 'unexpected', expected: expected.", result);
+        }
+    }
+}
