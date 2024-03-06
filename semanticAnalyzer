@@ -279,5 +279,92 @@ namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer
     }
 }
 
+package org.vrsl.qbasic;
+
+import org.antlr.v4.runtime.BaseErrorListener;
+import org.antlr.v4.runtime.RecognitionException;
+import org.antlr.v4.runtime.Recognizer;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class QuickBasicErrorsListener extends BaseErrorListener {
+
+    private static List<ErrorRephrase> errorsReprisals;
+
+    static {
+        errorsRephrases = new ArrayList<>();
+
+        errorsRephrases.add(
+                new ErrorRephrase(
+                        "extraneous input '\\)' expecting \\{<EOF>, ':', CLS, LOCATE, PRINT, INPUT, RANDOMIZE, IF, END, FOR, WHILE, DO, SELECT, LET, DEF, FUNCTION, SUB, DECLARE, DIM, TYPE, CONST, INTEGER_CONSTANT, ID, EOL\\}",
+                        "extra closing parenthesis ')'."
+                )
+        );
+
+        errorsRephrases.add(
+                new ErrorRephrase(
+                        "missing '\\)' at '\\\\n'",
+                        "missing closing parenthesis ')'."
+                )
+        );
+
+        errorsRephrases.add(
+                new ErrorRephrase(
+                        "mismatched input '([^']+)' expecting \\{'\\(', '\\+', '\\-', RND, STRING_CONSTANT, DOUBLE_CONSTANT, INTEGER_CONSTANT, HEX_CONSTANT, ID\\}",
+                        "missing second operand in binary operation."
+                )
+        );
+
+        errorsRephrases.add(
+                new ErrorRephrase(
+                        "extraneous input '([*|\\/]|\\\\\\\\)' expecting \\{'\\(', '\\+', '\\-', RND, STRING_CONSTANT, DOUBLE_CONSTANT, INTEGER_CONSTANT, HEX_CONSTANT, ID\\}",
+                        "extra operator '$1' in the context of binary operator."
+                )
+        );
+
+        errorsRephrases.add(
+                new ErrorRephrase(
+                        "no viable alternative at input 'DIM([^']+)'",
+                        "unable to declare variable staring with '$1'"
+                )
+        );
+
+        errorsRephrases.add(
+                new ErrorRephrase(
+                        "extraneous input 'AS' expecting \\{<EOF>, '\\:', CLS, LOCATE, PRINT, INPUT, RANDOMIZE, IF, END, FOR, WHILE, DO, SELECT, LET, DEF, FUNCTION, SUB, DECLARE, DIM, TYPE, CONST, INTEGER_CONSTANT, ID, EOL\\}",
+                        "unexpected type definition"
+                )
+        );
+
+    }
+
+    private List<String> errorsDetected = new ArrayList<>();
+
+    public boolean isErrorDetected() {
+        return !errorsDetected.isEmpty();
+    }
+
+    public Iterable<String> getDetectedErrors() {
+        return errorsDetected;
+    }
+
+    @Override
+    public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine, String msg, RecognitionException e) {
+        for  (ErrorRephrase rephraser : QuickBasicErrorsListener.errorsRephrases) {
+            if (rephraser.canRephrase(msg)) {
+                msg = rephraser.getRephrased();
+                break;
+            }
+        }
+
+        errorsDetected.add(
+            new StringBuilder()
+                    .append("Line ").append(line).append(':').append(charPositionInLine).append(' ')
+                    .append(msg)
+                    .toString()
+        );
+    }
+}
 
 
