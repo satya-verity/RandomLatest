@@ -140,3 +140,105 @@ public class ErrorMapping
 }
 
 
+using Antlr4.Build.Tasks;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+
+namespace MacroRunner.Frontend.SemanticAnalyzer
+{
+    public class ErrorPostProcessor
+    {
+        private readonly List<ErrorMapping> errorMappings;
+
+        public ErrorPostProcessor()
+        {
+            // Initialize error mappings
+            errorMappings = new List<ErrorMapping>
+        {
+            new ErrorMapping(@"extraneous input '([^']+)' expecting {([^}]+)}", "Unexpected input '$1', expected: $2."),
+            new ErrorMapping(@"missing '([^']+)' at '\\\\n'", "Missing '$1'."),
+            new ErrorMapping(@"mismatched input '([^']+)' expecting {([^}]+)}", "Missing second operand in binary operation."),
+            new ErrorMapping(@"extraneous input '([*|\\/]|\\\\\\\\)' expecting {([^}]+)}", "Extra operator '$1' in the context of binary operator."),
+            new ErrorMapping(@"no viable alternative at input '([^']+)'", "Unable to recognize input starting with '$1'."),
+            new ErrorMapping(@"extraneous input 'AS' expecting {([^}]+)}", "Unexpected type definition.")
+            // Add more mappings as needed
+        };
+        }
+
+        private string ExtractLineNumber(string antlrError)
+        {
+            Match match = Regex.Match(antlrError, @"line (\d+)");
+            return match.Success ? match.Groups[1].Value : "N/A";
+        }
+
+        private string ExtractColumnNumber(string antlrError)
+        {
+            Match match = Regex.Match(antlrError, @"column (\d+)");
+            return match.Success ? match.Groups[1].Value : "N/A";
+        }
+
+        private string ExtractErrorMessage(string antlrError)
+        {
+            Match match = Regex.Match(antlrError, @"message: (.+)");
+            return match.Success ? match.Groups[1].Value : "Unknown error";
+        }
+
+        public virtual string TransformError(string antlrError)
+        {
+            string lineNumber = ExtractLineNumber(antlrError);
+            string columnNumber = ExtractColumnNumber(antlrError);
+            string errorMessage = ExtractErrorMessage(antlrError);
+
+            string userFriendlyError = $"Error at line {lineNumber}, column {columnNumber}: ProcessError(errorMessage)"; 
+
+            return userFriendlyError;
+        }
+
+        public string ProcessError(string errorMessage)
+        {
+            foreach (var mapping in errorMappings)
+            {
+                var regex = new Regex(mapping.Pattern);
+                var match = regex.Match(errorMessage);
+
+                if (match.Success)
+                {
+                    var formattedMessage = FormatMessage(mapping.Message, match.Groups);
+                    return formattedMessage;
+                }
+            }
+
+            // If no matching pattern found, return the original error message
+            return errorMessage;
+        }
+
+        private string FormatMessage(string message, GroupCollection groups)
+        {
+            // Replace placeholders like $1, $2 with matched group values
+            for (int i = 1; i < groups.Count; i++)
+            {
+                message = message.Replace($"${i}", groups[i].Value);
+            }
+
+            return message;
+        }
+    }
+
+    public class ErrorMapping
+    {
+        public string Pattern { get; }
+        public string Message { get; }
+
+        public ErrorMapping(string pattern, string message)
+        {
+            Pattern = pattern;
+            Message = message;
+        }
+    }
+}
+
+
