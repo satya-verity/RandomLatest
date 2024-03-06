@@ -32,3 +32,111 @@ Line: 102 Column: 41 Syntax Error: no viable alternative at input 'Option Explic
   = ""[Walt's macros] Extras3:CloseAllButBibs""\n\nDim i As Integer\n\nCountOfWindows% = CS.WindowCount\ni = 0\n\nDo\n If CS.SetTopWindow( i ) = TRUE Then\n TypeOfWindow% = CS.ItemType\n Select Case TypeOfWindow%\n Case 5 To 11, 13, 15 To 16, 21 To 25\n CS.CloseList\n OtherWindowsClosed% = OtherWindowsClosed% + 1\n i = i - 1\n Case 3 To 4, 14, 18, 20\n CS.CloseRecord( False )\n '"
 "Line: 53 Column: 33 Syntax Error: no viable alternative at input 'Option Explicit\n\n\n\nSub Main\n\nConst INFORMATION_MESSAGE As Integer = 64\n\nDim CS As Object\nOn Error Resume Next\nSet CS = GetObject( , ""Connex.Client"" )\nOn Error GoTo 0\nIf CS Is Nothing Then Set CS = CreateObject( ""Connex.Client"" )\n\nDim CountOfAuthorityWindows%\nDim CountOfWindows%\nDim TypeOfWindow%\nDim WaltsMacros :𝑊𝑎𝑙𝑡𝑠𝑀𝑎𝑐𝑟𝑜𝑠
   = ""[Walt's macros] Extras3:CloseAuthorities""\n\nDim i As Integer\n\n\n\n\nRecyclePoint:\n\nCountOfWindows% = CS.WindowCount - 1\nFor i = 0 To CountOfWindows%\n If CS.SetTopWindow( i ) = TRUE Then\n TypeOfWindow% = CS.ItemType\n Select Case TypeOfWindow%\n Case 3 To 4, 14, 18, 20\n CountOfAuthorityWindows% = CountOfAuthorityWindows% + 1\n CS.CloseRecord( False )\n '"
+
+
+using System;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
+
+namespace org.vrsl.qbasic
+{
+    public class ErrorPostProcessor
+    {
+        private static readonly Regex LINE_NUMBER_PATTERN = new Regex(@"line (\d+)");
+        private static readonly Regex COLUMN_NUMBER_PATTERN = new Regex(@"column (\d+)");
+        private static readonly Regex ERROR_MESSAGE_PATTERN = new Regex(@"message: (.+)");
+
+        public string TransformError(string antlrError)
+        {
+            string lineNumber = ExtractValue(antlrError, LINE_NUMBER_PATTERN);
+            string columnNumber = ExtractValue(antlrError, COLUMN_NUMBER_PATTERN);
+            string errorMessage = ExtractValue(antlrError, ERROR_MESSAGE_PATTERN);
+
+            if (errorMessage != null)
+            {
+                foreach (ErrorRephrase rephraser in QuickBasicErrorsListener.ErrorsRephrases)
+                {
+                    if (rephraser.CanRephrase(errorMessage))
+                    {
+                        errorMessage = rephraser.GetRephrased();
+                        break;
+                    }
+                }
+            }
+
+            return $"Line {lineNumber}, column {columnNumber}: {errorMessage ?? antlrError}";
+        }
+
+        private string ExtractValue(string input, Regex pattern)
+        {
+            Match match = pattern.Match(input);
+            return match.Success ? match.Groups[1].Value : null;
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
+
+public class ErrorPostProcessor
+{
+    private readonly List<ErrorMapping> errorMappings;
+
+    public ErrorPostProcessor()
+    {
+        // Initialize error mappings
+        errorMappings = new List<ErrorMapping>
+        {
+            new ErrorMapping(@"extraneous input '([^']+)' expecting {([^}]+)}", "Unexpected input '$1', expected: $2."),
+            new ErrorMapping(@"missing '([^']+)' at '\\\\n'", "Missing '$1'."),
+            new ErrorMapping(@"mismatched input '([^']+)' expecting {([^}]+)}", "Missing second operand in binary operation."),
+            new ErrorMapping(@"extraneous input '([*|\\/]|\\\\\\\\)' expecting {([^}]+)}", "Extra operator '$1' in the context of binary operator."),
+            new ErrorMapping(@"no viable alternative at input '([^']+)'", "Unable to recognize input starting with '$1'."),
+            new ErrorMapping(@"extraneous input 'AS' expecting {([^}]+)}", "Unexpected type definition.")
+            // Add more mappings as needed
+        };
+    }
+
+    public string ProcessError(string errorMessage)
+    {
+        foreach (var mapping in errorMappings)
+        {
+            var regex = new Regex(mapping.Pattern);
+            var match = regex.Match(errorMessage);
+
+            if (match.Success)
+            {
+                var formattedMessage = FormatMessage(mapping.Message, match.Groups);
+                return formattedMessage;
+            }
+        }
+
+        // If no matching pattern found, return the original error message
+        return errorMessage;
+    }
+
+    private string FormatMessage(string message, GroupCollection groups)
+    {
+        // Replace placeholders like $1, $2 with matched group values
+        for (int i = 1; i < groups.Count; i++)
+        {
+            message = message.Replace($"${i}", groups[i].Value);
+        }
+
+        return message;
+    }
+}
+
+public class ErrorMapping
+{
+    public string Pattern { get; }
+    public string Message { get; }
+
+    public ErrorMapping(string pattern, string message)
+    {
+        Pattern = pattern;
+        Message = message;
+    }
+}
+
+
