@@ -216,3 +216,136 @@ namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer
     }
 }
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Xml;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable
+{
+    public class SymTabToXmlConverter
+    {
+        public string ToXml(ISymTabScopeResolver symTabScopeResolver)
+        {
+            var xmlBuilder = new StringBuilder();
+            var xmlWriter = XmlWriter.Create(xmlBuilder, new XmlWriterSettings { Indent = true });
+
+            xmlWriter.WriteStartElement("SymTabScopeResolver");
+            xmlWriter.WriteAttributeString("ModuleId", symTabScopeResolver.ModuleId);
+
+            // Additional logic for other properties if needed
+
+            xmlWriter.WriteEndElement();
+            xmlWriter.Close();
+
+            return xmlBuilder.ToString();
+        }
+
+        public string ToXml(ISymTab symTab)
+        {
+            var xmlBuilder = new StringBuilder();
+            var xmlWriter = XmlWriter.Create(xmlBuilder, new XmlWriterSettings { Indent = true });
+
+            xmlWriter.WriteStartElement("SymTab");
+            xmlWriter.WriteAttributeString("Scope", symTab.Scope.ToString());
+            xmlWriter.WriteAttributeString("NestingLevel", symTab.NestingLevel.ToString());
+
+            foreach (var entry in symTab.Entries)
+            {
+                xmlWriter.WriteRaw(ToXml(entry));
+            }
+
+            xmlWriter.WriteEndElement();
+            xmlWriter.Close();
+
+            return xmlBuilder.ToString();
+        }
+
+        public string ToXml(ISymTabEntry symTabEntry)
+        {
+            var xmlBuilder = new StringBuilder();
+            var xmlWriter = XmlWriter.Create(xmlBuilder, new XmlWriterSettings { Indent = true });
+
+            xmlWriter.WriteStartElement("SymTabEntry");
+            xmlWriter.WriteAttributeString("Name", symTabEntry.Name);
+            xmlWriter.WriteAttributeString("Scope", symTabEntry.SymTab.Scope.ToString());
+            xmlWriter.WriteAttributeString("Definition", symTabEntry.Definition.ToString());
+
+            if (symTabEntry.LineNumbers.Any())
+            {
+                xmlWriter.WriteStartElement("LineNumbers");
+                xmlWriter.WriteString(string.Join(", ", symTabEntry.LineNumbers));
+                xmlWriter.WriteEndElement();
+            }
+
+            // Additional logic for properties
+            if (symTabEntry.Properties != null)
+            {
+                xmlWriter.WriteRaw(ToXml(symTabEntry.Properties));
+            }
+
+            xmlWriter.WriteEndElement();
+            xmlWriter.Close();
+
+            return xmlBuilder.ToString();
+        }
+
+        public string ToXml(ISymTabEntryProperties properties)
+        {
+            var xmlBuilder = new StringBuilder();
+            var xmlWriter = XmlWriter.Create(xmlBuilder, new XmlWriterSettings { Indent = true });
+
+            if (properties is ScalarTypeProperties<int> scalarTypeProperties)
+            {
+                xmlWriter.WriteStartElement("ScalarTypeProperties");
+                xmlWriter.WriteAttributeString("MinRange", scalarTypeProperties.MinRange.ToString());
+                xmlWriter.WriteAttributeString("MaxRange", scalarTypeProperties.MaxRange.ToString());
+                xmlWriter.WriteEndElement();
+            }
+            else if (properties is SubrangeTypeProperties subrangeTypeProperties)
+            {
+                xmlWriter.WriteStartElement("SubrangeTypeProperties");
+                xmlWriter.WriteAttributeString("MinRange", subrangeTypeProperties.MinRange.ToString());
+                xmlWriter.WriteAttributeString("MaxRange", subrangeTypeProperties.MaxRange.ToString());
+                xmlWriter.WriteEndElement();
+            }
+            else if (properties is ArrayTypeProperties arrayTypeProperties)
+            {
+                xmlWriter.WriteStartElement("ArrayTypeProperties");
+
+                // Additional logic for array properties if needed
+
+                xmlWriter.WriteEndElement();
+            }
+            else if (properties is EnumerationTypeProperties enumerationTypeProperties)
+            {
+                xmlWriter.WriteStartElement("EnumerationTypeProperties");
+                xmlWriter.WriteStartElement("Items");
+
+                foreach (var item in enumerationTypeProperties.Items)
+                {
+                    xmlWriter.WriteElementString("Item", item);
+                }
+
+                xmlWriter.WriteEndElement();
+                xmlWriter.WriteEndElement();
+            }
+            else if (properties is RecordTypeProperties recordTypeProperties)
+            {
+                xmlWriter.WriteStartElement("RecordTypeProperties");
+
+                // Additional logic for record properties if needed
+
+                xmlWriter.WriteEndElement();
+            }
+            // Add more cases for other property types
+
+            xmlWriter.Close();
+
+            return xmlBuilder.ToString();
+        }
+    }
+}
+
+
