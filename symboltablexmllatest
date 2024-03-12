@@ -348,4 +348,144 @@ namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable
     }
 }
 
+using OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.TypeProperties;
+using System.Text;
+using System.Xml;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable
+{
+    public class SymTabToXmlConverter
+    {
+        // Existing implementation...
+
+        private void ConvertTypePropertiesToXml(XmlWriter writer, TypeSpecProperties typeProperties)
+        {
+            if (typeProperties is ScalarTypeProperties scalarTypeProperties)
+            {
+                ConvertScalarTypePropertiesToXml(writer, scalarTypeProperties);
+            }
+            else if (typeProperties is SubrangeTypeProperties subrangeTypeProperties)
+            {
+                ConvertSubrangeTypePropertiesToXml(writer, subrangeTypeProperties);
+            }
+            else if (typeProperties is ArrayTypeProperties arrayTypeProperties)
+            {
+                ConvertArrayTypePropertiesToXml(writer, arrayTypeProperties);
+            }
+            else if (typeProperties is EnumerationTypeProperties enumerationTypeProperties)
+            {
+                ConvertEnumerationTypePropertiesToXml(writer, enumerationTypeProperties);
+            }
+            else if (typeProperties is RecordTypeProperties recordTypeProperties)
+            {
+                ConvertRecordTypePropertiesToXml(writer, recordTypeProperties);
+            }
+            // Add more cases for other property types
+        }
+
+        private void ConvertScalarTypePropertiesToXml(XmlWriter writer, ScalarTypeProperties scalarTypeProperties)
+        {
+            writer.WriteStartElement("TYPE");
+            writer.WriteAttributeString("form", "SCALAR");
+            if (scalarTypeProperties.Identifier != null)
+                writer.WriteAttributeString("id", scalarTypeProperties.Identifier);
+
+            writer.WriteElementString("MIN_RANGE", scalarTypeProperties.MinRange.ToString());
+            writer.WriteElementString("MAX_RANGE", scalarTypeProperties.MaxRange.ToString());
+
+            writer.WriteEndElement(); // Close TYPE
+        }
+
+        private void ConvertSubrangeTypePropertiesToXml(XmlWriter writer, SubrangeTypeProperties subrangeTypeProperties)
+        {
+            writer.WriteStartElement("TYPE");
+            writer.WriteAttributeString("form", "SUBRANGE");
+            if (subrangeTypeProperties.Identifier != null)
+                writer.WriteAttributeString("id", subrangeTypeProperties.Identifier);
+
+            writer.WriteElementString("MIN_RANGE", subrangeTypeProperties.MinRange.ToString());
+            writer.WriteElementString("MAX_RANGE", subrangeTypeProperties.MaxRange.ToString());
+
+            writer.WriteEndElement(); // Close TYPE
+        }
+
+        private void ConvertArrayTypePropertiesToXml(XmlWriter writer, ArrayTypeProperties arrayTypeProperties)
+        {
+            writer.WriteStartElement("TYPE");
+            writer.WriteAttributeString("form", "ARRAY");
+            if (arrayTypeProperties.Identifier != null)
+                writer.WriteAttributeString("id", arrayTypeProperties.Identifier);
+
+            ConvertTypePropertiesToXml(writer, arrayTypeProperties.ElementType);
+
+            writer.WriteStartElement("INDEX");
+
+            foreach (var indexType in arrayTypeProperties.Index)
+            {
+                ConvertTypePropertiesToXml(writer, indexType);
+            }
+
+            writer.WriteEndElement(); // Close INDEX
+
+            writer.WriteEndElement(); // Close TYPE
+        }
+
+        private void ConvertEnumerationTypePropertiesToXml(XmlWriter writer, EnumerationTypeProperties enumerationTypeProperties)
+        {
+            writer.WriteStartElement("TYPE");
+            writer.WriteAttributeString("form", "ENUMERATION");
+            if (enumerationTypeProperties.Identifier != null)
+                writer.WriteAttributeString("id", enumerationTypeProperties.Identifier);
+
+            writer.WriteStartElement("ITEMS");
+
+            foreach (var item in enumerationTypeProperties.Items)
+            {
+                writer.WriteElementString("ITEM", item);
+            }
+
+            writer.WriteEndElement(); // Close ITEMS
+
+            writer.WriteEndElement(); // Close TYPE
+        }
+
+        private void ConvertRecordTypePropertiesToXml(XmlWriter writer, RecordTypeProperties recordTypeProperties)
+        {
+            writer.WriteStartElement("TYPE");
+            writer.WriteAttributeString("form", "RECORD");
+            if (recordTypeProperties.Identifier != null)
+                writer.WriteAttributeString("id", recordTypeProperties.Identifier);
+
+            writer.WriteStartElement("FIELDS");
+
+            foreach (var field in recordTypeProperties.Fields)
+            {
+                writer.WriteStartElement("FIELD");
+                writer.WriteAttributeString("name", field.Item1);
+                ConvertTypePropertiesToXml(writer, field.Item2);
+                writer.WriteEndElement(); // Close FIELD
+            }
+
+            writer.WriteEndElement(); // Close FIELDS
+
+            writer.WriteEndElement(); // Close TYPE
+        }
+
+        public string ToXml(ISymTabEntryProperties properties)
+        {
+            var xmlBuilder = new StringBuilder();
+            var xmlWriter = XmlWriter.Create(xmlBuilder, new XmlWriterSettings { Indent = true });
+
+            if (properties is TypeSpecProperties typeSpecProperties)
+            {
+                ConvertTypePropertiesToXml(xmlWriter, typeSpecProperties);
+            }
+            // Add more cases for other property types
+
+            xmlWriter.Close();
+
+            return xmlBuilder.ToString();
+        }
+    }
+}
 
