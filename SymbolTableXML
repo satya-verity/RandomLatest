@@ -57,3 +57,167 @@ namespace MacroRunner.Frontend.SemanticAnalyzer.OMLSymbolTable
         }
     }
 }
+The type should be presented by its own TYPE XML tag. It has only one mandatory attribute - form (see enumeration TypeForm) for the possible form values. The following id attribute corresponds to ITypeSpec.Identifier field. If this field has value, then id name should be provided. Otherwise, the id attribute should be omitted.
+
+General layout of the TYPE tag is presented on the illustration below.
+
+
+
+Details Area should contain information about the base type and type properties. 
+
+Please note that Details Area should be omitted for types which have id name different from symbol name. For instance:
+
+
+
+The next rules must be applied to decide if type details should be provided in XML representation
+
+The Type Details must be provided
+if type id is null . In this case it is anonymous type and details must be provided.
+if type id is equal to symbol name. In this case type is belong to the symbol and details must be provided.
+The Type Details must not be provided
+if type id is not equal to symbol name. In this case symbol refers to already defined type.
+5.1.3. Type Details Area 
+If type has a base type defined ( ITypeSpec.BaseType ) then it should be presented as BASE_TYPE XML tag with form and id attributes, similar to the TYPE tag itself. The details for BASE_TYPE must not be provided.
+
+The following tags should present ITypeSpec.Properties field data. To present this data in output the content of properties class should be analyzed and each property on this class should be presented as a tag. The tag's content should follow general rules defined in entire 5.3 section.
+
+For instance:
+
+RecordTypeProperties
+using System;
+ 
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Type
+{
+    public class RecordTypeProperties : TypeSpecProperties
+    {
+        public ISymbolTable Fields { get; }
+    }
+}
+This property contains information about UDT and this is an instance of ISymbolTable . It means that it should be present as FIELDS XML tag and provide XML presentation for Fields symbol table as FIELDS tag continent as it is shown below.
+
+RecordTypeProperties property XML representation
+<SYMBOL name = "RegType" scope = "MODULE" defintion = "TYPE">
+    <LINES>135, 142</LINES>
+    <TYPE from = "RECORD">
+        <FIELDS>
+            <SYMBOL name = "AX" scope = "CUSTOM_TYPE" definition = "FIELD">
+                <LINES>136<LINES>
+                <TYPE form = "SCALAR" id = "integer"/>
+            </SYMBOL>
+            <SYMBOL name = "BX" scope = "CUSTOM_TYPE" definition = "FIELD">
+                <LINES>136<LINES>
+                <TYPE form = "SCALAR" id = "integer"/>
+            </SYMBOL>
+        </FIELDS>
+    </TYPE>
+</SYMBOL>
+5.1.3.1. ArrayTypeProperties
+ArrayTypeProperties simplified definition
+using System;
+ 
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Type
+{
+    public class ArrayTypeProperties : TypeSpecProperties
+    {
+        public ITypeSpec[] Index { get; }
+    }
+}
+Array Type expected representation
+<TYPE form = "ARRAY">
+    <BASE_TYPE form = "SCALAR" id = "integer"/>
+    <INDEX>
+        <TYPE form = "SUBRANGE">
+            <BASE_TYPE form = "SCALAR" id = "integer"/>
+            <MIN_RANGE>1</MIN_RANGE>
+            <MAX_RANGE>10</MAX_RANGE>
+        </TYPE>
+        <TYPE form = "SUBRANGE">
+            <BASE_TYPE form = "SCALAR" id = "integer"/>
+            <MIN_RANGE>1</MIN_RANGE>
+            <MAX_RANGE>10</MAX_RANGE>
+        </TYPE>
+    </INDEX>
+</TYPE>
+5.1.3.2. EnumerationTypeProperties
+EnumerationTypeProperties simplified definition
+using System;
+using System.Collections.Generic;
+ 
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Type
+{
+    public class EnumerationTypeProperties : TypeSpecProperties
+    {
+        public IEnumerable<string> Items { get; }
+    }
+}
+Enumeration type expected representation
+<TYPE form = "ENUMERATION">
+    <ITEMS>
+        RED
+        GREEN
+        BLUE
+    </ITEMS>
+</TYPE>
+5.1.3.3. RecordTypeProperties
+RecordTypeProperties simplified declaration
+using System;
+ 
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Type
+{
+    public class RecordTypeProperties : TypeSpecProperties
+    {
+        public ISymbolTable Fields { get; }
+    }
+}
+UDT expected representation
+<SYMBOL name = "RegType" scope = "MODULE" defintion = "TYPE">
+    <LINES>135, 142</LINES>
+    <TYPE from = "RECORD">
+        <FIELDS>
+            <SYMBOL name = "AX" scope = "CUSTOM_TYPE" definition = "FIELD">
+                <LINES>136<LINES>
+                <TYPE form = "SCALAR" id = "integer"/>
+            </SYMBOL>
+            <SYMBOL name = "BX" scope = "CUSTOM_TYPE" definition = "FIELD">
+                <LINES>136<LINES>
+                <TYPE form = "SCALAR" id = "integer"/>
+            </SYMBOL>
+        </FIELDS>
+    </TYPE>
+</SYMBOL>
+5.1.3.4. ScalarTypeProperties
+ScalarTypeProperties simplified declaration
+using System;
+using System.Configuration;
+ 
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Type
+{
+    public class ScalarTypeProperties<T> : TypeSpecProperties
+    {
+        public T MinRange { get; }
+        public T MaxRange { get; }
+    }
+}
+Elementary Type expected representation
+<TYPE form = "SCALAR" id = "long">
+    <MIN_RANGE>-2147483648</MIN_RANGE>
+    <MAX_RANGE>2147483647</MAX_RANGE>
+</TYPE>
+5.1.3.5. SubrangeTypeProperties
+SubrangeTypeProperties simplified declaration
+using System;
+ 
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Type
+{
+    public class SubrangeTypeProperties : TypeSpecProperties
+    {
+        public int MinRange { get; }
+        public int MaxRange { get; }
+    }
+}
+Subrange expected representation
+<TYPE form = "SUBRANGE">
+    <BASE_TYPE form = "SCALAR" id = "integer"/>
+    <MIN_RANGE>1</MIN_RANGE>
+    <MAX_RANGE>10</MAX_RANGE>
+</TYPE>
