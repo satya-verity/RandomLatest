@@ -193,3 +193,83 @@
             return subrange;
         }
     }
+
+[Fact]
+public void ToXml_SymbolTableEntry_ReturnsValidXmlForTypeWithBaseType()
+{
+    // Arrange
+    ITypeSpec baseType = new TypeSpec(
+        TypeForm.SCALAR,
+        null,
+        new ScalarTypeProperties<int>(0, 10),
+        null);
+
+    ISymbolTable symbolTable = CreateSymbolTable();
+    ISymbolTableEntry symbolTableEntry = CreateSymbolTableEntry(symbolTable);
+    symbolTableEntry.TypeSpec = new TypeSpec(TypeForm.ARRAY, baseType, null, null);
+
+    // Act
+    string xml = SymbolTableToXMLConverter.ToXml(symbolTableEntry);
+
+    // Assert
+    Assert.NotNull(xml);
+    Assert.Contains("<TYPE", xml);
+    Assert.Contains("form=\"ARRAY\"", xml);
+    Assert.Contains("<BASE_TYPE", xml);
+}
+
+[Fact]
+public void ToXml_SymbolTableEntry_ReturnsValidXmlForTypeWithoutBaseType()
+{
+    // Arrange
+    ISymbolTable symbolTable = CreateSymbolTable();
+    ISymbolTableEntry symbolTableEntry = CreateSymbolTableEntry(symbolTable);
+    symbolTableEntry.TypeSpec = new TypeSpec(TypeForm.ARRAY, null, null, null);
+
+    // Act
+    string xml = SymbolTableToXMLConverter.ToXml(symbolTableEntry);
+
+    // Assert
+    Assert.NotNull(xml);
+    Assert.Contains("<TYPE", xml);
+    Assert.Contains("form=\"ARRAY\"", xml);
+    Assert.DoesNotContain("<BASE_TYPE", xml);
+}
+[Fact]
+public void ToXml_TypeWithMatchingSymbolNameAndIdentifier_IncludesIdAttribute()
+{
+    // Arrange
+    ISymbolTable symbolTable = CreateSymbolTable();
+    ISymbolTableEntry symbolTableEntry = CreateSymbolTableEntry(symbolTable);
+    IIdentifier identifier = new Identifier("CustomType");
+    symbolTableEntry.Identifier = identifier;
+    symbolTableEntry.Name = "CustomType";
+
+    // Act
+    string xml = SymbolTableToXMLConverter.ToXml(symbolTableEntry.TypeSpec);
+
+    // Assert
+    Assert.NotNull(xml);
+    Assert.Contains("<TYPE", xml);
+    Assert.Contains("id=\"CustomType\"", xml);
+}
+
+[Fact]
+public void ToXml_TypeWithDifferentSymbolNameAndIdentifier_ExcludesIdAttribute()
+{
+    // Arrange
+    ISymbolTable symbolTable = CreateSymbolTable();
+    ISymbolTableEntry symbolTableEntry = CreateSymbolTableEntry(symbolTable);
+    IIdentifier identifier = new Identifier("CustomType");
+    symbolTableEntry.Identifier = identifier;
+    symbolTableEntry.Name = "DifferentName";
+
+    // Act
+    string xml = SymbolTableToXMLConverter.ToXml(symbolTableEntry.TypeSpec);
+
+    // Assert
+    Assert.NotNull(xml);
+    Assert.Contains("<TYPE", xml);
+    Assert.DoesNotContain("id=\"CustomType\"", xml);
+}
+
