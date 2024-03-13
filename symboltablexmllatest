@@ -1,497 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml;
-using System.Xml.Linq;
-
-namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder
-{
-    public class AstToXmlConverter
-    {
-        public string ConvertToXml(IAst ast)
-        {
-            if (ast == null) return string.Empty;
-            StringBuilder xmlBuilder = new StringBuilder();
-            using (XmlWriter writer = XmlWriter.Create(xmlBuilder, new XmlWriterSettings { Indent = false, OmitXmlDeclaration=true }))
-            {
-                ConvertNodeToXml(writer, ast.Root);
-            }
-            return xmlBuilder.ToString();
-        }
-
-        private void ConvertNodeToXml(XmlWriter writer, IAstNode node)
-        {
-            if (node == null) return;
-            writer.WriteStartElement(node.Type.ToString());
-            if (node.Properties != null)
-            {
-                if (node.Properties.Id != null)
-                {
-                    writer.WriteAttributeString("id", node.Properties.Id.Name);
-                    writer.WriteAttributeString("scope", node.Properties.Id.SymbolTable.Scope.ToString());
-                    if (node.Properties.Id.LineNumbers.Count() > 0)
-                    {
-                        writer.WriteAttributeString("line", string.Join<int>(",", node.Properties.Id.LineNumbers.ToList()));
-                    }
-                }
-                if (node.Properties.Value != null)
-                {
-                    writer.WriteAttributeString("value", node.Properties.Value.Name);
-                }
-            }
-            if (node.TypeSpec != null)
-            {
-                writer.WriteAttributeString("type_id", node.TypeSpec.Form.ToString());
-            }
-
-            foreach (var child in node.Children)
-            {
-                ConvertNodeToXml(writer, child);
-            }
-
-            writer.WriteEndElement();
-        }
-    }
-}
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml;
-
-namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.TypeProperties
-{
-    public class ScalarTypeProperties : TypeSpecProperties
-    {
-        public int MinRange { get; }
-        public int MaxRange { get; }
-        public bool IsSigned { get; }
-
-        public ScalarTypeProperties(int minRange, int maxRange, bool isSigned)
-        {
-            MinRange = minRange;
-            MaxRange = maxRange;
-            IsSigned = isSigned;
-        }
-
-        public override void ConvertToXml(XmlWriter writer)
-        {
-            writer.WriteAttributeString("minRange", this.MinRange.ToString());
-            writer.WriteAttributeString("maxRange", this.MaxRange.ToString());
-            writer.WriteAttributeString("isSigned", this.IsSigned.ToString());
-        }
-    }
-}
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml;
-
-namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.TypeProperties
-{
-    public class SubrangeTypeProperties : TypeSpecProperties
-    {
-        public int MinRange { get; }
-        public int MaxRange { get; }
-
-        public SubrangeTypeProperties(int minRange, int maxRange)
-        {
-            MinRange = minRange;
-            MaxRange = maxRange;
-        }
-
-        public override void ConvertToXml(XmlWriter writer)
-        {
-            writer.WriteAttributeString("minRange", this.MinRange.ToString());
-            writer.WriteAttributeString("maxRange", this.MaxRange.ToString());
-        }
-    }
-}
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml;
-
-namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.TypeProperties
-{
-    public class ArrayTypeProperties : TypeSpecProperties
-    {
-        public int Size { get; }
-        public ValueElementType ElementType { get; }
-
-        public ArrayTypeProperties(int size, ValueElementType elementType)
-        {
-            Size = size;
-            ElementType = elementType;
-        }
-
-        public override void ConvertToXml(XmlWriter writer)
-        {
-            writer.WriteAttributeString("size", this.Size.ToString());
-            writer.WriteAttributeString("elementType", this.ElementType.ToString());
-        }
-    }
-}
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml;
-
-namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.TypeProperties
-{
-    public class RecordTypeProperties : TypeSpecProperties
-    {
-        private IEnumerable<Tuple<string, ValueElementType>> fields { get; }
-
-        public IEnumerable<Tuple<string, ValueElementType>> Fields => fields.ToList();
-        public RecordTypeProperties(IEnumerable<Tuple<string, ValueElementType>> fields)
-        {
-            this.fields = fields.ToList();
-        }
-
-        public override void ConvertToXml(XmlWriter writer)
-        {
-            foreach (var field in this.Fields)
-            {
-                writer.WriteStartElement("FIELD");
-                writer.WriteAttributeString("name", field.Item1);
-                writer.WriteAttributeString("type", field.Item2.ToString());
-                writer.WriteEndElement();
-            }
-        }
-    }
-}
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml;
-
-namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.TypeProperties
-{
-    public class EnumerationTypeProperties : TypeSpecProperties
-    {
-        private readonly IEnumerable<string> enumerationConstants;
-        public IEnumerable<string> EnumerationConstants => enumerationConstants.ToList();
-
-        public EnumerationTypeProperties(IEnumerable<string> enumerationConstants)
-        {
-            this.enumerationConstants = enumerationConstants.ToList();
-        }
-
-        public override void ConvertToXml(XmlWriter writer)
-        {
-            foreach (var constant in this.EnumerationConstants)
-            {
-                writer.WriteElementString("CONSTANT", constant);
-            }
-        }
-    }
-}
-using OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.TypeProperties;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml;
-
-namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer
-{
-    public abstract class TypeSpecProperties
-    {
-        // Common properties for type specifications
-        public abstract void ConvertToXml(XmlWriter writer);
-    }
-}
-
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Xml;
-
-namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable
-{
-    public class SymTabToXmlConverter
-    {
-        public string ToXml(ISymTabScopeResolver symTabScopeResolver)
-        {
-            var xmlBuilder = new StringBuilder();
-            var xmlWriter = XmlWriter.Create(xmlBuilder, new XmlWriterSettings { Indent = true });
-
-            xmlWriter.WriteStartElement("SymTabScopeResolver");
-            xmlWriter.WriteAttributeString("ModuleId", symTabScopeResolver.ModuleId);
-
-            // Additional logic for other properties if needed
-
-            xmlWriter.WriteEndElement();
-            xmlWriter.Close();
-
-            return xmlBuilder.ToString();
-        }
-
-        public string ToXml(ISymTab symTab)
-        {
-            var xmlBuilder = new StringBuilder();
-            var xmlWriter = XmlWriter.Create(xmlBuilder, new XmlWriterSettings { Indent = true });
-
-            xmlWriter.WriteStartElement("SymTab");
-            xmlWriter.WriteAttributeString("Scope", symTab.Scope.ToString());
-            xmlWriter.WriteAttributeString("NestingLevel", symTab.NestingLevel.ToString());
-
-            foreach (var entry in symTab.Entries)
-            {
-                xmlWriter.WriteRaw(ToXml(entry));
-            }
-
-            xmlWriter.WriteEndElement();
-            xmlWriter.Close();
-
-            return xmlBuilder.ToString();
-        }
-
-        public string ToXml(ISymTabEntry symTabEntry)
-        {
-            var xmlBuilder = new StringBuilder();
-            var xmlWriter = XmlWriter.Create(xmlBuilder, new XmlWriterSettings { Indent = true });
-
-            xmlWriter.WriteStartElement("SymTabEntry");
-            xmlWriter.WriteAttributeString("Name", symTabEntry.Name);
-            xmlWriter.WriteAttributeString("Scope", symTabEntry.SymTab.Scope.ToString());
-            xmlWriter.WriteAttributeString("Definition", symTabEntry.Definition.ToString());
-
-            if (symTabEntry.LineNumbers.Any())
-            {
-                xmlWriter.WriteStartElement("LineNumbers");
-                xmlWriter.WriteString(string.Join(", ", symTabEntry.LineNumbers));
-                xmlWriter.WriteEndElement();
-            }
-
-            // Additional logic for properties
-            if (symTabEntry.Properties != null)
-            {
-                xmlWriter.WriteRaw(ToXml(symTabEntry.Properties));
-            }
-
-            xmlWriter.WriteEndElement();
-            xmlWriter.Close();
-
-            return xmlBuilder.ToString();
-        }
-
-        public string ToXml(ISymTabEntryProperties properties)
-        {
-            var xmlBuilder = new StringBuilder();
-            var xmlWriter = XmlWriter.Create(xmlBuilder, new XmlWriterSettings { Indent = true });
-
-            if (properties is ScalarTypeProperties<int> scalarTypeProperties)
-            {
-                xmlWriter.WriteStartElement("ScalarTypeProperties");
-                xmlWriter.WriteAttributeString("MinRange", scalarTypeProperties.MinRange.ToString());
-                xmlWriter.WriteAttributeString("MaxRange", scalarTypeProperties.MaxRange.ToString());
-                xmlWriter.WriteEndElement();
-            }
-            else if (properties is SubrangeTypeProperties subrangeTypeProperties)
-            {
-                xmlWriter.WriteStartElement("SubrangeTypeProperties");
-                xmlWriter.WriteAttributeString("MinRange", subrangeTypeProperties.MinRange.ToString());
-                xmlWriter.WriteAttributeString("MaxRange", subrangeTypeProperties.MaxRange.ToString());
-                xmlWriter.WriteEndElement();
-            }
-            else if (properties is ArrayTypeProperties arrayTypeProperties)
-            {
-                xmlWriter.WriteStartElement("ArrayTypeProperties");
-
-                // Additional logic for array properties if needed
-
-                xmlWriter.WriteEndElement();
-            }
-            else if (properties is EnumerationTypeProperties enumerationTypeProperties)
-            {
-                xmlWriter.WriteStartElement("EnumerationTypeProperties");
-                xmlWriter.WriteStartElement("Items");
-
-                foreach (var item in enumerationTypeProperties.Items)
-                {
-                    xmlWriter.WriteElementString("Item", item);
-                }
-
-                xmlWriter.WriteEndElement();
-                xmlWriter.WriteEndElement();
-            }
-            else if (properties is RecordTypeProperties recordTypeProperties)
-            {
-                xmlWriter.WriteStartElement("RecordTypeProperties");
-
-                // Additional logic for record properties if needed
-
-                xmlWriter.WriteEndElement();
-            }
-            // Add more cases for other property types
-
-            xmlWriter.Close();
-
-            return xmlBuilder.ToString();
-        }
-    }
-}
-
-using OCLCMacroLanguage.Frontend.SemanticAnalyzer.ASTBuilder.TypeProperties;
-using System.Text;
-using System.Xml;
-
-namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable
-{
-    public class SymTabToXmlConverter
-    {
-        // Existing implementation...
-
-        private void ConvertTypePropertiesToXml(XmlWriter writer, TypeSpecProperties typeProperties)
-        {
-            if (typeProperties is ScalarTypeProperties scalarTypeProperties)
-            {
-                ConvertScalarTypePropertiesToXml(writer, scalarTypeProperties);
-            }
-            else if (typeProperties is SubrangeTypeProperties subrangeTypeProperties)
-            {
-                ConvertSubrangeTypePropertiesToXml(writer, subrangeTypeProperties);
-            }
-            else if (typeProperties is ArrayTypeProperties arrayTypeProperties)
-            {
-                ConvertArrayTypePropertiesToXml(writer, arrayTypeProperties);
-            }
-            else if (typeProperties is EnumerationTypeProperties enumerationTypeProperties)
-            {
-                ConvertEnumerationTypePropertiesToXml(writer, enumerationTypeProperties);
-            }
-            else if (typeProperties is RecordTypeProperties recordTypeProperties)
-            {
-                ConvertRecordTypePropertiesToXml(writer, recordTypeProperties);
-            }
-            // Add more cases for other property types
-        }
-
-        private void ConvertScalarTypePropertiesToXml(XmlWriter writer, ScalarTypeProperties scalarTypeProperties)
-        {
-            writer.WriteStartElement("TYPE");
-            writer.WriteAttributeString("form", "SCALAR");
-            if (scalarTypeProperties.Identifier != null)
-                writer.WriteAttributeString("id", scalarTypeProperties.Identifier);
-
-            writer.WriteElementString("MIN_RANGE", scalarTypeProperties.MinRange.ToString());
-            writer.WriteElementString("MAX_RANGE", scalarTypeProperties.MaxRange.ToString());
-
-            writer.WriteEndElement(); // Close TYPE
-        }
-
-        private void ConvertSubrangeTypePropertiesToXml(XmlWriter writer, SubrangeTypeProperties subrangeTypeProperties)
-        {
-            writer.WriteStartElement("TYPE");
-            writer.WriteAttributeString("form", "SUBRANGE");
-            if (subrangeTypeProperties.Identifier != null)
-                writer.WriteAttributeString("id", subrangeTypeProperties.Identifier);
-
-            writer.WriteElementString("MIN_RANGE", subrangeTypeProperties.MinRange.ToString());
-            writer.WriteElementString("MAX_RANGE", subrangeTypeProperties.MaxRange.ToString());
-
-            writer.WriteEndElement(); // Close TYPE
-        }
-
-        private void ConvertArrayTypePropertiesToXml(XmlWriter writer, ArrayTypeProperties arrayTypeProperties)
-        {
-            writer.WriteStartElement("TYPE");
-            writer.WriteAttributeString("form", "ARRAY");
-            if (arrayTypeProperties.Identifier != null)
-                writer.WriteAttributeString("id", arrayTypeProperties.Identifier);
-
-            ConvertTypePropertiesToXml(writer, arrayTypeProperties.ElementType);
-
-            writer.WriteStartElement("INDEX");
-
-            foreach (var indexType in arrayTypeProperties.Index)
-            {
-                ConvertTypePropertiesToXml(writer, indexType);
-            }
-
-            writer.WriteEndElement(); // Close INDEX
-
-            writer.WriteEndElement(); // Close TYPE
-        }
-
-        private void ConvertEnumerationTypePropertiesToXml(XmlWriter writer, EnumerationTypeProperties enumerationTypeProperties)
-        {
-            writer.WriteStartElement("TYPE");
-            writer.WriteAttributeString("form", "ENUMERATION");
-            if (enumerationTypeProperties.Identifier != null)
-                writer.WriteAttributeString("id", enumerationTypeProperties.Identifier);
-
-            writer.WriteStartElement("ITEMS");
-
-            foreach (var item in enumerationTypeProperties.Items)
-            {
-                writer.WriteElementString("ITEM", item);
-            }
-
-            writer.WriteEndElement(); // Close ITEMS
-
-            writer.WriteEndElement(); // Close TYPE
-        }
-
-        private void ConvertRecordTypePropertiesToXml(XmlWriter writer, RecordTypeProperties recordTypeProperties)
-        {
-            writer.WriteStartElement("TYPE");
-            writer.WriteAttributeString("form", "RECORD");
-            if (recordTypeProperties.Identifier != null)
-                writer.WriteAttributeString("id", recordTypeProperties.Identifier);
-
-            writer.WriteStartElement("FIELDS");
-
-            foreach (var field in recordTypeProperties.Fields)
-            {
-                writer.WriteStartElement("FIELD");
-                writer.WriteAttributeString("name", field.Item1);
-                ConvertTypePropertiesToXml(writer, field.Item2);
-                writer.WriteEndElement(); // Close FIELD
-            }
-
-            writer.WriteEndElement(); // Close FIELDS
-
-            writer.WriteEndElement(); // Close TYPE
-        }
-
-        public string ToXml(ISymTabEntryProperties properties)
-        {
-            var xmlBuilder = new StringBuilder();
-            var xmlWriter = XmlWriter.Create(xmlBuilder, new XmlWriterSettings { Indent = true });
-
-            if (properties is TypeSpecProperties typeSpecProperties)
-            {
-                ConvertTypePropertiesToXml(xmlWriter, typeSpecProperties);
-            }
-            // Add more cases for other property types
-
-            xmlWriter.Close();
-
-            return xmlBuilder.ToString();
-        }
-    }
-}
-
-
 using OCLCMacroLanguage.Frontend.SemanticAnalyzer;
 using OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Type;
+using SharpCompress.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -504,27 +13,27 @@ namespace MacroRunner.Frontend.SemanticAnalyzer.SymbolTable
 {
     public class SymbolTableToXMLConverter
     {
-         public static string ToXml(ISymbolTableScopeResolver symTabScopeResolver)
+        public static string ToXml(ISymbolTableScopeResolver symTabScopeResolver)
         {
+            if (symTabScopeResolver == null) return string.Empty;
             var xmlBuilder = new StringBuilder();
-            var xmlWriter = XmlWriter.Create(xmlBuilder, new XmlWriterSettings { Indent = true });
+            var xmlWriter = XmlWriter.Create(xmlBuilder, new XmlWriterSettings { OmitXmlDeclaration = true, Indent = true });
 
             foreach (var symbolTable in symTabScopeResolver.SymbolTables.Values)
             {
-                ToXml(symbolTable);
+                xmlWriter.WriteRaw(ToXml(symbolTable));
             }
-            xmlWriter.WriteEndElement();
             xmlWriter.Close();
 
             return xmlBuilder.ToString();
         }
 
-         public static string ToXml(ISymbolTable symTab)
+        public static string ToXml(ISymbolTable symTab)
         {
             var xmlBuilder = new StringBuilder();
-            var xmlWriter = XmlWriter.Create(xmlBuilder, new XmlWriterSettings { Indent = true });
+            var xmlWriter = XmlWriter.Create(xmlBuilder, new XmlWriterSettings { OmitXmlDeclaration = true, Indent = true });
 
-            xmlWriter.WriteStartElement("SymTab");
+            xmlWriter.WriteStartElement("SYMBOLTABLE");
             xmlWriter.WriteAttributeString("Scope", symTab.Scope.ToString());
             xmlWriter.WriteAttributeString("NestingLevel", symTab.NestingLevel.ToString());
 
@@ -542,7 +51,7 @@ namespace MacroRunner.Frontend.SemanticAnalyzer.SymbolTable
         public static string ToXml(ISymbolTableEntry symTabEntry)
         {
             var xmlBuilder = new StringBuilder();
-            var xmlWriter = XmlWriter.Create(xmlBuilder, new XmlWriterSettings { Indent = true });
+            var xmlWriter = XmlWriter.Create(xmlBuilder, new XmlWriterSettings { OmitXmlDeclaration = true, Indent = true });
 
             xmlWriter.WriteStartElement("SYMBOL");
             xmlWriter.WriteAttributeString("name", symTabEntry.Name);
@@ -555,7 +64,7 @@ namespace MacroRunner.Frontend.SemanticAnalyzer.SymbolTable
                 xmlWriter.WriteString(string.Join(", ", symTabEntry.LineNumbers));
                 xmlWriter.WriteEndElement();
             }
-
+            ConvertTypeSpecToXml(xmlWriter, symTabEntry.TypeSpec, symTabEntry.Name);
             xmlWriter.WriteEndElement();
             xmlWriter.Close();
 
@@ -572,25 +81,26 @@ namespace MacroRunner.Frontend.SemanticAnalyzer.SymbolTable
                 {
                     writer.WriteAttributeString("id", typeSpec.Identifier.Name);
                 }
-            }
-            if (typeSpec.BaseType != null)
-            {
-                writer.WriteStartElement("BASE_TYPE");
-                writer.WriteAttributeString("form", typeSpec.Form.ToString());
-                if (typeSpec.Identifier != null)
-                {
-                    writer.WriteAttributeString("id", typeSpec.Identifier.Name);
-                }
-                writer.WriteEndElement(); // Close BASE_TYPE
-            }
 
-            if (typeSpec.Properties != null)
-            {
-                ConvertTypePropertiesToXml(writer, typeSpec.Properties, symbolName);
+                if (typeSpec.BaseType != null)
+                {
+                    writer.WriteStartElement("BASE_TYPE");
+                    writer.WriteAttributeString("form", typeSpec.BaseType.Form.ToString());
+                    if (typeSpec.Identifier != null)
+                    {
+                        writer.WriteAttributeString("id", typeSpec.BaseType.Identifier.Name);
+                    }
+                    writer.WriteEndElement(); // Close BASE_TYPE
+                }
+
+                if (typeSpec.Properties != null && ShouldIncludeDetailsArea(typeSpec?.Identifier?.Name, symbolName))
+                {
+                    ConvertTypePropertiesToXml(writer, typeSpec.Properties);
+                }
+                writer.WriteEndElement(); // Close TYPE
             }
-            writer.WriteEndElement(); // Close TYPE
         }
-        private static void ConvertTypePropertiesToXml(XmlWriter writer, TypeSpecProperties typeProperties, string symbolName)
+        private static void ConvertTypePropertiesToXml(XmlWriter writer, TypeSpecProperties typeProperties)
         {
             if (typeProperties is ScalarTypeProperties<int> scalarTypeProperties)
             {
@@ -612,6 +122,11 @@ namespace MacroRunner.Frontend.SemanticAnalyzer.SymbolTable
             {
                 ConvertRecordTypePropertiesToXml(writer, recordTypeProperties);
             }
+        }
+
+        private static bool ShouldIncludeDetailsArea(string typeIdentifier, string symbolName)
+        {
+            return typeIdentifier == null || typeIdentifier == symbolName;
         }
 
         private static void ConvertScalarTypePropertiesToXml<T>(XmlWriter writer, ScalarTypeProperties<T> scalarTypeProperties)
@@ -652,141 +167,12 @@ namespace MacroRunner.Frontend.SemanticAnalyzer.SymbolTable
         private static void ConvertRecordTypePropertiesToXml(XmlWriter writer, RecordTypeProperties recordTypeProperties)
         {
             writer.WriteStartElement("FIELDS");
-            SymbolTableToXMLConverter.ToXml(recordTypeProperties.Fields);
+            foreach (var entry in recordTypeProperties.Fields.Entries)
+            {
+                writer.WriteRaw(ToXml(entry));
+            }
             writer.WriteEndElement(); // Close FIELDS
 
-        }     
-    }
-}
-
-private void ConvertTypePropertiesToXml(XmlWriter writer, TypeSpecProperties typeProperties, string symbolName)
-{
-    switch (typeProperties)
-    {
-        case ScalarTypeProperties scalarTypeProperties:
-            ConvertScalarTypePropertiesToXml(writer, scalarTypeProperties, symbolName);
-            break;
-        case SubrangeTypeProperties subrangeTypeProperties:
-            ConvertSubrangeTypePropertiesToXml(writer, subrangeTypeProperties, symbolName);
-            break;
-        case ArrayTypeProperties arrayTypeProperties:
-            ConvertArrayTypePropertiesToXml(writer, arrayTypeProperties, symbolName);
-            break;
-        case EnumerationTypeProperties enumerationTypeProperties:
-            ConvertEnumerationTypePropertiesToXml(writer, enumerationTypeProperties, symbolName);
-            break;
-        case RecordTypeProperties recordTypeProperties:
-            ConvertRecordTypePropertiesToXml(writer, recordTypeProperties, symbolName);
-            break;
-        // Add more cases for other property types
-    }
-}
-
-private void ConvertScalarTypePropertiesToXml(XmlWriter writer, ScalarTypeProperties scalarTypeProperties, string symbolName)
-{
-    writer.WriteStartElement("TYPE");
-    writer.WriteAttributeString("form", scalarTypeProperties.Form.ToString().ToUpper());
-    if (scalarTypeProperties.Identifier != null && symbolName == scalarTypeProperties.Identifier)
-        writer.WriteAttributeString("id", scalarTypeProperties.Identifier);
-
-    if (ShouldIncludeDetailsArea(scalarTypeProperties.Identifier, symbolName))
-    {
-        writer.WriteElementString("MIN_RANGE", scalarTypeProperties.MinRange.ToString());
-        writer.WriteElementString("MAX_RANGE", scalarTypeProperties.MaxRange.ToString());
-    }
-
-    writer.WriteEndElement(); // Close TYPE tag
-}
-
-private void ConvertSubrangeTypePropertiesToXml(XmlWriter writer, SubrangeTypeProperties subrangeTypeProperties, string symbolName)
-{
-    writer.WriteStartElement("TYPE");
-    writer.WriteAttributeString("form", subrangeTypeProperties.Form.ToString().ToUpper());
-    if (subrangeTypeProperties.Identifier != null && symbolName == subrangeTypeProperties.Identifier)
-        writer.WriteAttributeString("id", subrangeTypeProperties.Identifier);
-
-    if (ShouldIncludeDetailsArea(subrangeTypeProperties.Identifier, symbolName))
-    {
-        writer.WriteElementString("MIN_RANGE", subrangeTypeProperties.MinRange.ToString());
-        writer.WriteElementString("MAX_RANGE", subrangeTypeProperties.MaxRange.ToString());
-    }
-
-    writer.WriteEndElement(); // Close TYPE tag
-}
-
-private void ConvertArrayTypePropertiesToXml(XmlWriter writer, ArrayTypeProperties arrayTypeProperties, string symbolName)
-{
-    writer.WriteStartElement("TYPE");
-    writer.WriteAttributeString("form", arrayTypeProperties.Form.ToString().ToUpper());
-    if (arrayTypeProperties.Identifier != null && symbolName == arrayTypeProperties.Identifier)
-        writer.WriteAttributeString("id", arrayTypeProperties.Identifier);
-
-    if (ShouldIncludeDetailsArea(arrayTypeProperties.Identifier, symbolName))
-    {
-        ConvertTypePropertiesToXml(writer, arrayTypeProperties.ElementType, symbolName);
-
-        writer.WriteStartElement("INDEX");
-
-        foreach (var indexType in arrayTypeProperties.Index)
-        {
-            ConvertTypePropertiesToXml(writer, indexType, symbolName);
         }
-
-        writer.WriteEndElement(); // Close INDEX
     }
-
-    writer.WriteEndElement(); // Close TYPE tag
 }
-
-private void ConvertEnumerationTypePropertiesToXml(XmlWriter writer, EnumerationTypeProperties enumerationTypeProperties, string symbolName)
-{
-    writer.WriteStartElement("TYPE");
-    writer.WriteAttributeString("form", enumerationTypeProperties.Form.ToString().ToUpper());
-    if (enumerationTypeProperties.Identifier != null && symbolName == enumerationTypeProperties.Identifier)
-        writer.WriteAttributeString("id", enumerationTypeProperties.Identifier);
-
-    if (ShouldIncludeDetailsArea(enumerationTypeProperties.Identifier, symbolName))
-    {
-        writer.WriteStartElement("ITEMS");
-
-        foreach (var item in enumerationTypeProperties.Items)
-        {
-            writer.WriteElementString("ITEM", item);
-        }
-
-        writer.WriteEndElement(); // Close ITEMS
-    }
-
-    writer.WriteEndElement(); // Close TYPE tag
-}
-
-private void ConvertRecordTypePropertiesToXml(XmlWriter writer, RecordTypeProperties recordTypeProperties, string symbolName)
-{
-    writer.WriteStartElement("TYPE");
-    writer.WriteAttributeString("form", recordTypeProperties.Form.ToString().ToUpper());
-    if (recordTypeProperties.Identifier != null && symbolName == recordTypeProperties.Identifier)
-        writer.WriteAttributeString("id", recordTypeProperties.Identifier);
-
-    if (ShouldIncludeDetailsArea(recordTypeProperties.Identifier, symbolName))
-    {
-        writer.WriteStartElement("FIELDS");
-
-        foreach (var field in recordTypeProperties.Fields)
-        {
-            writer.WriteStartElement("FIELD");
-            writer.WriteAttributeString("name", field.Item1);
-            ConvertTypePropertiesToXml(writer, field.Item2, symbolName);
-            writer.WriteEndElement(); // Close FIELD
-        }
-
-        writer.WriteEndElement(); // Close FIELDS
-    }
-
-    writer.WriteEndElement(); // Close TYPE tag
-}
-
-private bool ShouldIncludeDetailsArea(string typeIdentifier, string symbolName)
-{
-    return typeIdentifier == null || typeIdentifier == symbolName;
-}
-
