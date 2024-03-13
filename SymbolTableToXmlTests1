@@ -1,3 +1,5 @@
+    public class SymbolTableToXMLConverterTests
+    {
         [Fact]
         public void ToXml_WithNullSymbolTableScopeResolver_ShouldReturnEmptyString()
         {
@@ -190,3 +192,4 @@
               null);
             return subrange;
         }
+    }
