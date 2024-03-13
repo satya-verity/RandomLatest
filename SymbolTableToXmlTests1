@@ -1,18 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml;
-using Xunit;
-using Moq;
-using OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable;
-using OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Type;
-
-namespace SymbolTableTests
-{
-    public class SymbolTableToXMLConverterTests
-    {
         [Fact]
         public void ToXml_WithNullSymbolTableScopeResolver_ShouldReturnEmptyString()
         {
@@ -31,516 +16,177 @@ namespace SymbolTableTests
         {
             // Arrange
             var mockSymbolTableScopeResolver = new Mock<ISymbolTableScopeResolver>();
-            mockSymbolTableScopeResolver.Setup(m => m.SymbolTables).Returns(new Dictionary<string, ISymbolTable>());
+            var symTables = new Dictionary<MemoryScope, ISymbolTable>();
+            symTables.Add(MemoryScope.GLOBAL, CreateSymbolTable());
+            mockSymbolTableScopeResolver.Setup(m => m.SymbolTables).Returns(symTables);
 
             // Act
             string result = SymbolTableToXMLConverter.ToXml(mockSymbolTableScopeResolver.Object);
 
             // Assert
-            // Add assertions to validate the XML structure and content
             Assert.NotEmpty(result);
-            // Additional assertions as needed
         }
 
-        // Similar tests for other public methods (ToXml(ISymbolTable symTab) and ToXml(ISymbolTableEntry symTabEntry)) can be written here
-    }
-}
-using System;
-using Xunit;
-using OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable;
-using OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Type;
-
-namespace MacroRunner.Tests
-{
-    public class SymbolTableToXMLConverterTests
-    {
         [Fact]
-        public void SymbolTableToXml_CreatesValidXml()
+        public void ToXml_SymbolTable_CreatesValidXml()
         {
             // Arrange
-            ISymbolTable symbolTable = CreateSymbolTable(); // Create a test symbol table
+            ISymbolTable symbolTable = CreateSymbolTable();
 
             // Act
             string xml = SymbolTableToXMLConverter.ToXml(symbolTable);
 
             // Assert
             Assert.NotNull(xml);
-            // Add more assertions to validate the XML structure and content
         }
 
         [Fact]
-        public void SymbolTableEntryToXml_CreatesValidXml()
+        public void ToXml_SymbolTableEntry_CreatesValidXml()
         {
             // Arrange
-            ISymbolTableEntry symbolTableEntry = CreateSymbolTableEntry(); // Create a test symbol table entry
+            ISymbolTable symbolTable = CreateSymbolTable();
+            ISymbolTableEntry symbolTableEntry = CreateSymbolTableEntry(symbolTable);
 
             // Act
             string xml = SymbolTableToXMLConverter.ToXml(symbolTableEntry);
 
             // Assert
             Assert.NotNull(xml);
-            // Add more assertions to validate the XML structure and content
         }
 
         [Fact]
-        public void TypeSpecToXml_CreatesValidXml()
+        public void ToXml_SymbolTableEntry_ReturnsValidXmlForScalarType()
         {
             // Arrange
-            ITypeSpec typeSpec = CreateTypeSpec(); // Create a test type specification
+            TypeSpecProperties typeSpec = new ScalarTypeProperties<int>(0, 10);
+            ISymbolTable symbolTable = CreateSymbolTable();
+            ISymbolTableEntry symbolTableEntry = CreateSymbolTableEntry(symbolTable);
+            symbolTableEntry.TypeSpec = new TypeSpec(TypeForm.SCALAR, null, typeSpec, null);
 
             // Act
-            string xml = SymbolTableToXMLConverter.ToXml(typeSpec);
+            string xml = SymbolTableToXMLConverter.ToXml(symbolTableEntry);
 
             // Assert
             Assert.NotNull(xml);
-            // Add more assertions to validate the XML structure and content
+            Assert.Contains("<TYPE", xml);
+            Assert.Contains("form=\"SCALAR\"", xml);
+            Assert.Contains("<MIN", xml);
+            Assert.Contains("<MAX", xml);
         }
 
-        // Helper methods to create test objects
+        [Fact]
+        public void ToXml_SymbolTableEntry_ReturnsValidXmlForSubRangeType()
+        {
+            // Arrange
+            TypeSpecProperties typeSpec = new SubrangeTypeProperties(0, 10);
+            ISymbolTable symbolTable = CreateSymbolTable();
+            ISymbolTableEntry symbolTableEntry = CreateSymbolTableEntry(symbolTable);
+            symbolTableEntry.TypeSpec = new TypeSpec(TypeForm.SUBRANGE, null, typeSpec, null);
+
+            // Act
+            string xml = SymbolTableToXMLConverter.ToXml(symbolTableEntry);
+
+            // Assert
+            Assert.NotNull(xml);
+            Assert.Contains("<TYPE", xml);
+            Assert.Contains("form=\"SUBRANGE\"", xml);
+            Assert.Contains("<MIN", xml);
+            Assert.Contains("<MAX", xml);
+        }
+
+        [Fact]
+        public void ToXml_SymbolTableEntry_ReturnsValidXmlForArrayType()
+        {
+            // Arrange
+            ITypeSpec subrange = new TypeSpec(
+                TypeForm.SUBRANGE,
+                null,
+                new SubrangeTypeProperties(1, 10),
+                null);
+
+            TypeSpecProperties typeSpec = new ArrayTypeProperties(subrange);
+            ISymbolTable symbolTable = CreateSymbolTable();
+            ISymbolTableEntry symbolTableEntry = CreateSymbolTableEntry(symbolTable);
+            symbolTableEntry.TypeSpec = new TypeSpec(TypeForm.ARRAY, null, typeSpec, null);
+            // Act
+            string xml = SymbolTableToXMLConverter.ToXml(symbolTableEntry);
+
+            // Assert
+            Assert.NotNull(xml);
+            Assert.Contains("<TYPE", xml);
+            Assert.Contains("form=\"ARRAY\"", xml);
+            Assert.Contains("<INDEX", xml);
+        }
+
+        [Fact]
+        public void ToXml_SymbolTableEntry_ReturnsValidXmlForEnumerationType()
+        {
+           //Arrange
+            TypeSpecProperties typeSpec = new EnumerationTypeProperties(new List<string>() {"RED", "BLUE", "YELLOW" });
+            ISymbolTable symbolTable = CreateSymbolTable();
+            ISymbolTableEntry symbolTableEntry = CreateSymbolTableEntry(symbolTable);
+            symbolTableEntry.TypeSpec = new TypeSpec(TypeForm.ENUMERATION, null, typeSpec, null);
+            // Act
+            string xml = SymbolTableToXMLConverter.ToXml(symbolTableEntry);
+
+            // Assert
+            Assert.NotNull(xml);
+            Assert.Contains("<TYPE", xml);
+            Assert.Contains("form=\"ENUMERATION\"", xml);
+            Assert.Contains("<ITEMS", xml);
+            Assert.Contains("<ITEM>RED</ITEM>", xml);
+        }
+
+        [Fact]
+        public void ToXml_SymbolTableEntry_ReturnsValidXmlForRecordType()
+        {
+            //Arrange
+            ISymbolTable fieldsSymbolTable = new SymbolTable(MemoryScope.CUSTOM_TYPE);
+
+            var field1 =fieldsSymbolTable.Enter("Field1");
+            field1.TypeSpec = new TypeSpec(TypeForm.SCALAR);
+            field1.Definition = Definition.FIELD;
+
+            var field2=fieldsSymbolTable.Enter("Field2");
+            field2.TypeSpec = new TypeSpec(TypeForm.SCALAR);
+            field2.Definition = Definition.FIELD;
+
+            ISymbolTable symbolTable = CreateSymbolTable();
+            ISymbolTableEntry symbolTableEntry = CreateSymbolTableEntry(symbolTable);
+            symbolTableEntry.TypeSpec = new TypeSpec(TypeForm.RECORD,null, new RecordTypeProperties(fieldsSymbolTable), null);
+          
+            // Act
+            string xml = SymbolTableToXMLConverter.ToXml(symbolTableEntry);
+
+            // Assert
+            Assert.NotNull(xml);
+            Assert.Contains("<TYPE", xml);
+            Assert.Contains("form=\"RECORD\"", xml);
+            Assert.Contains("<FIELDS", xml);
+        }
+
         private ISymbolTable CreateSymbolTable()
         {
-            // Create and return a test symbol table
-            throw new NotImplementedException();
+            var symbolTable = new TestedSymbolTable(MemoryScope.GLOBAL);
+
+            var entry1 = symbolTable.Enter("variable1");
+            var entry2 = symbolTable.Enter("variable2");
+            return symbolTable;
         }
 
-        private ISymbolTableEntry CreateSymbolTableEntry()
+        private ISymbolTableEntry CreateSymbolTableEntry(ISymbolTable symTab)
         {
-            // Create and return a test symbol table entry
-            throw new NotImplementedException();
+            var entry = new SymbolTableEntry("variable", symTab);
+            entry.AppendLineNumber(10);
+            return entry;
         }
-
         private ITypeSpec CreateTypeSpec()
         {
-            // Create and return a test type specification
-            throw new NotImplementedException();
+            ITypeSpec subrange = new TypeSpec(
+              TypeForm.SUBRANGE,
+              null,
+              new SubrangeTypeProperties(1, 10)
+,
+              null);
+            return subrange;
         }
-    }
-}
-using Xunit;
-using OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable;
-using OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Type;
-using System.Collections.Generic;
-
-namespace MacroRunner.Tests
-{
-    public class SymbolTableToXMLConverterTests
-    {
-        [Fact]
-        public void SymbolTableToXml_ReturnsValidXmlForEmptySymbolTable()
-        {
-            // Arrange
-            ISymbolTable symbolTable = new SymbolTable();
-
-            // Act
-            string xml = SymbolTableToXMLConverter.ToXml(symbolTable);
-
-            // Assert
-            Assert.NotNull(xml);
-            Assert.Contains("<SymTab", xml);
-            Assert.DoesNotContain("<SYMBOL", xml);
-        }
-
-        [Fact]
-        public void SymbolTableToXml_ReturnsValidXmlForSymbolTableWithEntries()
-        {
-            // Arrange
-            ISymbolTable symbolTable = CreateSymbolTableWithEntries();
-
-            // Act
-            string xml = SymbolTableToXMLConverter.ToXml(symbolTable);
-
-            // Assert
-            Assert.NotNull(xml);
-            Assert.Contains("<SYMBOL", xml);
-            Assert.Contains("name=\"Symbol1\"", xml);
-            Assert.Contains("name=\"Symbol2\"", xml);
-        }
-
-        [Fact]
-        public void SymbolTableEntryToXml_ReturnsValidXml()
-        {
-            // Arrange
-            ISymbolTableEntry symbolTableEntry = CreateSymbolTableEntry();
-
-            // Act
-            string xml = SymbolTableToXMLConverter.ToXml(symbolTableEntry);
-
-            // Assert
-            Assert.NotNull(xml);
-            Assert.Contains("<SYMBOL", xml);
-            Assert.Contains("name=\"Symbol1\"", xml);
-            Assert.Contains("scope=\"Local\"", xml);
-        }
-
-        [Fact]
-        public void TypeSpecToXml_ReturnsValidXmlForScalarType()
-        {
-            // Arrange
-            ITypeSpec typeSpec = new ScalarTypeProperties<int>(0, 10, true);
-
-            // Act
-            string xml = SymbolTableToXMLConverter.ToXml(typeSpec);
-
-            // Assert
-            Assert.NotNull(xml);
-            Assert.Contains("<TYPE", xml);
-            Assert.Contains("form=\"SCALAR\"", xml);
-            Assert.Contains("isSigned=\"True\"", xml);
-        }
-
-        [Fact]
-        public void TypeSpecToXml_ReturnsValidXmlForRecordType()
-        {
-            // Arrange
-            ITypeSpec typeSpec = CreateRecordTypeSpec();
-
-            // Act
-            string xml = SymbolTableToXMLConverter.ToXml(typeSpec);
-
-            // Assert
-            Assert.NotNull(xml);
-            Assert.Contains("<TYPE", xml);
-            Assert.Contains("form=\"RECORD\"", xml);
-            Assert.Contains("<FIELDS>", xml);
-            Assert.Contains("<FIELD name=\"Field1\"", xml);
-            Assert.Contains("<FIELD name=\"Field2\"", xml);
-        }
-
-        // Helper methods to create test objects
-        private ISymbolTable CreateSymbolTableWithEntries()
-        {
-            var symbolTable = new SymbolTable();
-            symbolTable.AddEntry("Symbol1", SymbolType.Constant, ScopeType.Local);
-            symbolTable.AddEntry("Symbol2", SymbolType.Variable, ScopeType.Global);
-            return symbolTable;
-        }
-
-        private ISymbolTableEntry CreateSymbolTableEntry()
-        {
-            return new SymbolTableEntry("Symbol1", SymbolType.Constant, ScopeType.Local, new List<int> { 10, 20 });
-        }
-
-        private ITypeSpec CreateRecordTypeSpec()
-        {
-            var fields = new List<Tuple<string, ValueElementType>>
-            {
-                Tuple.Create("Field1", ValueElementType.Integer),
-                Tuple.Create("Field2", ValueElementType.String)
-            };
-            return new RecordTypeProperties(fields);
-        }
-    }
-}
-using Xunit;
-using OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable;
-using OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Type;
-using System.Collections.Generic;
-
-namespace MacroRunner.Tests
-{
-    public class SymbolTableToXMLConverterTests
-    {
-        [Fact]
-        public void SymbolTableToXml_ReturnsValidXmlForEmptySymbolTable()
-        {
-            // Arrange
-            ISymbolTable symbolTable = new SymbolTable();
-
-            // Act
-            string xml = SymbolTableToXMLConverter.ToXml(symbolTable);
-
-            // Assert
-            Assert.NotNull(xml);
-            Assert.Contains("<SymTab", xml);
-            Assert.DoesNotContain("<SYMBOL", xml);
-        }
-
-        [Fact]
-        public void SymbolTableToXml_ReturnsValidXmlForSymbolTableWithEntries()
-        {
-            // Arrange
-            ISymbolTable symbolTable = CreateSymbolTableWithEntries();
-
-            // Act
-            string xml = SymbolTableToXMLConverter.ToXml(symbolTable);
-
-            // Assert
-            Assert.NotNull(xml);
-            Assert.Contains("<SYMBOL", xml);
-            Assert.Contains("name=\"Symbol1\"", xml);
-            Assert.Contains("name=\"Symbol2\"", xml);
-        }
-
-        [Fact]
-        public void SymbolTableEntryToXml_ReturnsValidXml()
-        {
-            // Arrange
-            ISymbolTableEntry symbolTableEntry = CreateSymbolTableEntry();
-
-            // Act
-            string xml = SymbolTableToXMLConverter.ToXml(symbolTableEntry);
-
-            // Assert
-            Assert.NotNull(xml);
-            Assert.Contains("<SYMBOL", xml);
-            Assert.Contains("name=\"Symbol1\"", xml);
-            Assert.Contains("scope=\"Local\"", xml);
-        }
-
-        [Fact]
-        public void TypeSpecToXml_ReturnsValidXmlForScalarType()
-        {
-            // Arrange
-            ITypeSpec typeSpec = new ScalarTypeProperties<int>(0, 10, true);
-
-            // Act
-            string xml = SymbolTableToXMLConverter.ToXml(typeSpec);
-
-            // Assert
-            Assert.NotNull(xml);
-            Assert.Contains("<TYPE", xml);
-            Assert.Contains("form=\"SCALAR\"", xml);
-            Assert.Contains("isSigned=\"True\"", xml);
-        }
-
-        [Fact]
-        public void TypeSpecToXml_ReturnsValidXmlForRecordType()
-        {
-            // Arrange
-            ITypeSpec typeSpec = CreateRecordTypeSpec();
-
-            // Act
-            string xml = SymbolTableToXMLConverter.ToXml(typeSpec);
-
-            // Assert
-            Assert.NotNull(xml);
-            Assert.Contains("<TYPE", xml);
-            Assert.Contains("form=\"RECORD\"", xml);
-            Assert.Contains("<FIELDS>", xml);
-            Assert.Contains("<FIELD name=\"Field1\"", xml);
-            Assert.Contains("<FIELD name=\"Field2\"", xml);
-        }
-
-        [Fact]
-        public void TypeSpecToXml_ReturnsValidXmlForAnonymousType()
-        {
-            // Arrange
-            ITypeSpec typeSpec = new ScalarTypeProperties<int>(0, 10, true) { Identifier = null };
-
-            // Act
-            string xml = SymbolTableToXMLConverter.ToXml(typeSpec);
-
-            // Assert
-            Assert.NotNull(xml);
-            Assert.Contains("<TYPE", xml);
-            Assert.DoesNotContain("id=", xml); // Should not contain an id attribute
-        }
-
-        [Fact]
-        public void TypeSpecToXml_DoesNotIncludeDetailsForReferencedType()
-        {
-            // Arrange
-            ITypeSpec typeSpec = new ScalarTypeProperties<int>(0, 10, true) { Identifier = new Identifier("ScalarType") };
-
-            // Act
-            string xml = SymbolTableToXMLConverter.ToXml(typeSpec);
-
-            // Assert
-            Assert.NotNull(xml);
-            Assert.Contains("<TYPE", xml);
-            Assert.DoesNotContain("<BASE_TYPE", xml); // Should not include details for referenced type
-            Assert.DoesNotContain("<FIELDS", xml); // Should not include details for referenced type
-        }
-
-        // Helper methods to create test objects
-        private ISymbolTable CreateSymbolTableWithEntries()
-        {
-            var symbolTable = new SymbolTable();
-            symbolTable.AddEntry("Symbol1", SymbolType.Constant, ScopeType.Local);
-            symbolTable.AddEntry("Symbol2", SymbolType.Variable, ScopeType.Global);
-            return symbolTable;
-        }
-
-        private ISymbolTableEntry CreateSymbolTableEntry()
-        {
-            return new SymbolTableEntry("Symbol1", SymbolType.Constant, ScopeType.Local, new List<int> { 10, 20 });
-        }
-
-        private ITypeSpec CreateRecordTypeSpec()
-        {
-            var fields = new List<Tuple<string, ValueElementType>>
-            {
-                Tuple.Create("Field1", ValueElementType.Integer),
-                Tuple.Create("Field2", ValueElementType.String)
-            };
-            return new RecordTypeProperties(fields);
-        }
-    }
-}
-[Fact]
-public void TypeSpecToXml_ReturnsValidXmlForArrayType()
-{
-    // Arrange
-    var indexTypes = new List<ITypeSpec>
-    {
-        new SubrangeTypeProperties(1, 10),
-        new SubrangeTypeProperties(1, 10)
-    };
-    var arrayType = new ArrayTypeProperties(2, ValueElementType.Integer, indexTypes);
-    
-    // Act
-    string xml = SymbolTableToXMLConverter.ToXml(arrayType);
-    
-    // Assert
-    Assert.NotNull(xml);
-    Assert.Contains("<TYPE", xml);
-    Assert.Contains("form=\"ARRAY\"", xml);
-    Assert.Contains("<BASE_TYPE", xml);
-    Assert.Contains("form=\"SCALAR\"", xml);
-    Assert.Contains("id=\"integer\"", xml);
-    Assert.Contains("<INDEX>", xml);
-    Assert.Contains("<TYPE form=\"SUBRANGE\"", xml);
-    Assert.Contains("<MIN_RANGE>1</MIN_RANGE>", xml);
-    Assert.Contains("<MAX_RANGE>10</MAX_RANGE>", xml);
-    Assert.Contains("<TYPE form=\"SUBRANGE\"", xml);
-    Assert.Contains("<MIN_RANGE>1</MIN_RANGE>", xml);
-    Assert.Contains("<MAX_RANGE>10</MAX_RANGE>", xml);
-}
-[Fact]
-public void SymbolTableToXml_ReturnsValidXmlForRecordTypeSymbol()
-{
-    // Arrange
-    var fields = new List<Tuple<string, ITypeSpec>>
-    {
-        Tuple.Create("AX", (ITypeSpec)new ScalarTypeProperties<int>(ValueElementType.Integer)),
-        Tuple.Create("BX", (ITypeSpec)new ScalarTypeProperties<int>(ValueElementType.Integer))
-    };
-    var recordType = new RecordTypeProperties(fields);
-    var symbolEntry = new SymbolTableEntry("RegType", SymbolType.Type, SymbolScope.Module, new List<int> { 135, 142 }, recordType);
-    var symbolTable = new SymbolTable(SymbolScope.Module, 0);
-    symbolTable.AddEntry(symbolEntry);
-
-    // Act
-    string xml = SymbolTableToXMLConverter.ToXml(symbolTable);
-
-    // Assert
-    Assert.NotNull(xml);
-    Assert.Contains("<SYMBOL", xml);
-    Assert.Contains("name=\"RegType\"", xml);
-    Assert.Contains("scope=\"MODULE\"", xml);
-    Assert.Contains("definition=\"TYPE\"", xml);
-    Assert.Contains("<LINES>135, 142</LINES>", xml);
-    Assert.Contains("<TYPE", xml);
-    Assert.Contains("from=\"RECORD\"", xml);
-    Assert.Contains("<FIELDS>", xml);
-    Assert.Contains("<SYMBOL", xml);
-    Assert.Contains("name=\"AX\"", xml);
-    Assert.Contains("scope=\"CUSTOM_TYPE\"", xml);
-    Assert.Contains("definition=\"FIELD\"", xml);
-    Assert.Contains("<LINES>136</LINES>", xml);
-    Assert.Contains("<TYPE", xml);
-    Assert.Contains("form=\"SCALAR\"", xml);
-    Assert.Contains("id=\"integer\"", xml);
-    Assert.Contains("<SYMBOL", xml);
-    Assert.Contains("name=\"BX\"", xml);
-    Assert.Contains("scope=\"CUSTOM_TYPE\"", xml);
-    Assert.Contains("definition=\"FIELD\"", xml);
-    Assert.Contains("<LINES>136</LINES>", xml);
-    Assert.Contains("<TYPE", xml);
-    Assert.Contains("form=\"SCALAR\"", xml);
-    Assert.Contains("id=\"integer\"", xml);
-}
-[Fact]
-public void SymbolTableToXml_ReturnsValidXmlForRecordTypeSymbolWithIdNameDifferentFromSymbolName()
-{
-    // Arrange
-    var fields = new List<Tuple<string, ITypeSpec>>
-    {
-        Tuple.Create("AX", (ITypeSpec)new ScalarTypeProperties<int>(ValueElementType.Integer)),
-        Tuple.Create("BX", (ITypeSpec)new ScalarTypeProperties<int>(ValueElementType.Integer))
-    };
-    var recordType = new RecordTypeProperties(fields);
-    var symbolEntry = new SymbolTableEntry("RegType", SymbolType.Type, SymbolScope.Module, new List<int> { 135, 142 }, recordType);
-    var symbolTable = new SymbolTable(SymbolScope.Module, 0);
-    symbolTable.AddEntry(symbolEntry);
-
-    // Act
-    string xml = SymbolTableToXMLConverter.ToXml(symbolTable);
-
-    // Assert
-    Assert.NotNull(xml);
-    Assert.Contains("<SYMBOL", xml);
-    Assert.Contains("name=\"RegType\"", xml);
-    Assert.Contains("scope=\"MODULE\"", xml);
-    Assert.Contains("definition=\"TYPE\"", xml);
-    Assert.Contains("<LINES>135, 142</LINES>", xml);
-    Assert.Contains("<TYPE", xml);
-    Assert.Contains("from=\"RECORD\"", xml);
-    Assert.Contains("<FIELDS>", xml);
-    Assert.Contains("<SYMBOL", xml);
-    Assert.Contains("name=\"AX\"", xml);
-    Assert.Contains("scope=\"CUSTOM_TYPE\"", xml);
-    Assert.Contains("definition=\"FIELD\"", xml);
-    Assert.Contains("<LINES>136</LINES>", xml);
-    Assert.Contains("<TYPE", xml);
-    Assert.Contains("form=\"SCALAR\"", xml);
-    Assert.Contains("id=\"integer\"", xml);
-    Assert.Contains("<SYMBOL", xml);
-    Assert.Contains("name=\"BX\"", xml);
-    Assert.Contains("scope=\"CUSTOM_TYPE\"", xml);
-    Assert.Contains("definition=\"FIELD\"", xml);
-    Assert.Contains("<LINES>136</LINES>", xml);
-    Assert.Contains("<TYPE", xml);
-    Assert.Contains("form=\"SCALAR\"", xml);
-    Assert.Contains("id=\"integer\"", xml);
-}
-[Fact]
-public void ConvertSubrangeTypeToXml_ReturnsValidXmlForSubrangeType()
-{
-    // Arrange
-    var subrangeType = new SubrangeTypeProperties(1, 10);
-    var xmlBuilder = new StringBuilder();
-    var xmlWriter = XmlWriter.Create(xmlBuilder, new XmlWriterSettings { Indent = true });
-
-    // Act
-    xmlWriter.WriteStartElement("TYPE");
-    SymbolTableToXMLConverter.ConvertTypeSpecToXml(xmlWriter, subrangeType, null);
-    xmlWriter.WriteEndElement();
-    xmlWriter.Close();
-
-    string xml = xmlBuilder.ToString();
-
-    // Assert
-    Assert.NotNull(xml);
-    Assert.Contains("<TYPE", xml);
-    Assert.Contains("form=\"SUBRANGE\"", xml);
-    Assert.Contains("<BASE_TYPE", xml);
-    Assert.Contains("form=\"SCALAR\"", xml);
-    Assert.Contains("id=\"integer\"", xml);
-    Assert.Contains("<MIN_RANGE>1</MIN_RANGE>", xml);
-    Assert.Contains("<MAX_RANGE>10</MAX_RANGE>", xml);
-}
-[Fact]
-public void ConvertScalarTypeToXml_ReturnsValidXmlForScalarType()
-{
-    // Arrange
-    var scalarType = new ScalarTypeProperties<long>(-2147483648, 2147483647);
-    var xmlBuilder = new StringBuilder();
-    var xmlWriter = XmlWriter.Create(xmlBuilder, new XmlWriterSettings { Indent = true });
-
-    // Act
-    xmlWriter.WriteStartElement("TYPE");
-    SymbolTableToXMLConverter.ConvertTypeSpecToXml(xmlWriter, scalarType, null);
-    xmlWriter.WriteEndElement();
-    xmlWriter.Close();
-
-    string xml = xmlBuilder.ToString();
-
-    // Assert
-    Assert.NotNull(xml);
-    Assert.Contains("<TYPE", xml);
-    Assert.Contains("form=\"SCALAR\"", xml);
-    Assert.Contains("id=\"long\"", xml);
-    Assert.Contains("<MIN_RANGE>-2147483648</MIN_RANGE>", xml);
-    Assert.Contains("<MAX_RANGE>2147483647</MAX_RANGE>", xml);
-}
