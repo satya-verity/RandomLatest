@@ -403,3 +403,58 @@ private bool ShouldIncludeDetailsArea(string typeIdentifier, string symbolName)
     return typeIdentifier == null || typeIdentifier == symbolName;
 }
 
+public class SymbolTableToXMLConverterTests
+{
+    // Other existing tests...
+
+    [Fact]
+    public void ConvertTypeSpecToXml_WithNullTypeIdentifier_ShouldIncludeDetailsArea()
+    {
+        // Arrange
+        var xmlBuilder = new StringBuilder();
+        var xmlWriter = XmlWriter.Create(xmlBuilder, new XmlWriterSettings { OmitXmlDeclaration = true, Indent = true });
+        var typeSpec = new Mock<ITypeSpec>();
+        typeSpec.SetupGet(t => t.Identifier).Returns((Symbol)null); // Null type identifier
+
+        // Act
+        SymbolTableToXMLConverter.ConvertTypeSpecToXml(xmlWriter, typeSpec.Object, "symbolName");
+
+        // Assert
+        Assert.Contains("<TYPE", xmlBuilder.ToString()); // TYPE element should be included
+    }
+
+    [Fact]
+    public void ConvertTypeSpecToXml_WithMatchingTypeIdentifierAndSymbolName_ShouldIncludeDetailsArea()
+    {
+        // Arrange
+        var xmlBuilder = new StringBuilder();
+        var xmlWriter = XmlWriter.Create(xmlBuilder, new XmlWriterSettings { OmitXmlDeclaration = true, Indent = true });
+        var typeIdentifier = new Symbol("symbolName");
+        var typeSpec = new Mock<ITypeSpec>();
+        typeSpec.SetupGet(t => t.Identifier).Returns(typeIdentifier);
+
+        // Act
+        SymbolTableToXMLConverter.ConvertTypeSpecToXml(xmlWriter, typeSpec.Object, "symbolName");
+
+        // Assert
+        Assert.Contains("<TYPE", xmlBuilder.ToString()); // TYPE element should be included
+    }
+
+    [Fact]
+    public void ConvertTypeSpecToXml_WithDifferentTypeIdentifierAndSymbolName_ShouldNotIncludeDetailsArea()
+    {
+        // Arrange
+        var xmlBuilder = new StringBuilder();
+        var xmlWriter = XmlWriter.Create(xmlBuilder, new XmlWriterSettings { OmitXmlDeclaration = true, Indent = true });
+        var typeIdentifier = new Symbol("differentName");
+        var typeSpec = new Mock<ITypeSpec>();
+        typeSpec.SetupGet(t => t.Identifier).Returns(typeIdentifier);
+
+        // Act
+        SymbolTableToXMLConverter.ConvertTypeSpecToXml(xmlWriter, typeSpec.Object, "symbolName");
+
+        // Assert
+        Assert.DoesNotContain("<TYPE", xmlBuilder.ToString()); // TYPE element should not be included
+    }
+}
+
