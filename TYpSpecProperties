@@ -1,0 +1,254 @@
+using System;
+using System.Xml;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Type
+{
+    public class ArrayTypeProperties : TypeSpecProperties
+    {
+        public ITypeSpec[] Index { get; }
+
+        public int Dimensions
+        {
+            get { return Index.Length; }
+        }
+
+        public ArrayTypeProperties(params ITypeSpec[] subranges)
+        {
+            if (subranges == null)
+            {
+                throw new ArgumentNullException(nameof(subranges));
+            }
+
+            int dimension = 0;
+            foreach(ITypeSpec subrange in subranges)
+            {
+                if (subrange.Form != TypeForm.SUBRANGE)
+                {
+                    throw new ArgumentException($"ArrayTypeProperties: invalid Subrange type for {dimension} dimension.");
+                }
+
+                dimension++;
+            }
+
+            this.Index = subranges;
+        }
+
+        public override void ConvertToXml(XmlWriter writer)
+        {
+            writer.WriteStartElement("ArrayTypeProperties");
+            foreach (var subrange in Index)
+            {
+                subrange.Properties.ConvertToXml(writer);
+            }
+            writer.WriteEndElement();
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Xml;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Type
+{
+    public class EnumerationTypeProperties : TypeSpecProperties
+    {
+        public IEnumerable<string> Items { get; }
+
+        public EnumerationTypeProperties(IEnumerable<string> items)
+        {
+            if(items == null)
+            {
+                throw new ArgumentNullException(nameof(items));
+            }
+
+            this.Items = items;
+        }
+
+        public override void ConvertToXml(XmlWriter writer)
+        {
+            writer.WriteStartElement("EnumerationTypeProperties");
+            foreach (var item in Items)
+            {
+                writer.WriteElementString("Item", item);
+            }
+            writer.WriteEndElement();
+        }
+    }
+}
+using System;
+using System.Xml;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Type
+{
+    public class RecordTypeProperties : TypeSpecProperties
+    {
+        public ISymbolTable Fields { get; }
+
+        public RecordTypeProperties(ISymbolTable recordSymbolTable)
+        {
+            if (recordSymbolTable == null)
+            {
+                throw new ArgumentNullException(nameof(recordSymbolTable));
+            }
+
+            if (recordSymbolTable.Scope != MemoryScope.CUSTOM_TYPE)
+            {
+                throw new ArgumentException("RecordTypeProperties: invalid memory scope.");
+            }
+
+            this.Fields = recordSymbolTable;
+        }
+
+        public override void ConvertToXml(XmlWriter writer)
+        {
+            writer.WriteStartElement("RecordTypeProperties");
+           // Fields.ConvertToXml(writer);
+            writer.WriteEndElement();
+        }
+    }
+}
+using System;
+using System.Configuration;
+using System.Xml;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Type
+{
+    public class ScalarTypeProperties<T> : TypeSpecProperties
+    {
+        private const string ResultIsUndefinedMessage = "Result is undefined for non numeric types";
+        private const string RangeShouldBeProvidedMessage = "Min and Max should be provided for numeric types.";
+        private const string OnlyNumericTypesAreSupportedMessage = "Only numeric types are supported for min and max.";
+        private const string InvalidRangeMessage = "Min value must be less then Max value for type constraints.";
+
+        public T MinRange
+        {
+            get
+            {
+                if (this.IsNumericType())
+                {
+                    return this.minRange;
+                }
+                else
+                {
+                    throw new InvalidOperationException(ScalarTypeProperties<T>.ResultIsUndefinedMessage);
+                }
+            }
+        }
+
+        public T MaxRange
+        {
+            get
+            {
+                if (this.IsNumericType())
+                {
+                    return this.maxRange;
+                }
+                else
+                {
+                    throw new InvalidOperationException(ScalarTypeProperties<T>.ResultIsUndefinedMessage);
+                }
+            }
+        }
+
+        private T minRange;
+        private T maxRange;
+
+        public ScalarTypeProperties()
+        {
+            if (this.IsNumericType())
+            {
+                throw new ArgumentException(ScalarTypeProperties<T>.RangeShouldBeProvidedMessage);
+            }
+        }
+
+        public ScalarTypeProperties(T minRange, T maxRange)
+        {
+            if (!this.IsNumericType())
+            {
+                throw new ArgumentException(ScalarTypeProperties<T>.OnlyNumericTypesAreSupportedMessage);
+            }
+
+            if (!IsValidRange(minRange, maxRange))
+            {
+                throw new ArgumentException(ScalarTypeProperties<T>.InvalidRangeMessage);
+            }
+
+            this.minRange = minRange;
+            this.maxRange = maxRange;
+        }
+
+        public bool IsNumericType()
+        {
+            return typeof(T) == typeof(int) ||
+            typeof(T) == typeof(long) ||
+            typeof(T) == typeof(float) ||
+            typeof(T) == typeof(double);
+        }
+
+        private static bool IsValidRange(T min, T max)
+        {
+            if (typeof(T) == typeof(int))
+            {
+                return Convert.ToInt32(min) < Convert.ToInt32(max);
+            }
+            else if (typeof(T) == typeof(long))
+            {
+                return Convert.ToInt64(min) < Convert.ToInt64(max);
+            }
+            else if (typeof(T) == typeof(float))
+            {
+                return Convert.ToSingle(min) < Convert.ToSingle(max);
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return Convert.ToDouble(min) < Convert.ToDouble(max);
+            }
+            else
+            {
+                throw new InvalidOperationException(); 
+            }
+        }
+
+        public override void ConvertToXml(XmlWriter writer)
+        {
+            writer.WriteStartElement("ScalarTypeProperties");
+            writer.WriteElementString("MinRange", MinRange.ToString());
+            writer.WriteElementString("MaxRange", MaxRange.ToString());
+            writer.WriteEndElement();
+        }
+    }
+}
+using System;
+using System.Xml;
+
+namespace OCLCMacroLanguage.Frontend.SemanticAnalyzer.SymbolTable.Properties.Type
+{
+    public class SubrangeTypeProperties : TypeSpecProperties
+    {
+        private const string InvalidRangeMessage = "Min value must be less then Max value for the range.";
+
+        public int MinRange { get; }
+        public int MaxRange { get; }
+
+        public SubrangeTypeProperties(int minRange, int maxRange)
+        {
+            if (minRange >= maxRange)
+            {
+                throw new ArgumentException(SubrangeTypeProperties.InvalidRangeMessage);
+            }
+
+            MinRange = minRange;
+            MaxRange = maxRange;
+        }
+
+        public override void ConvertToXml(XmlWriter writer)
+        {
+            writer.WriteStartElement("SubrangeTypeProperties");
+            writer.WriteElementString("MinRange", MinRange.ToString());
+            writer.WriteElementString("MaxRange", MaxRange.ToString());
+            writer.WriteEndElement();
+        }
+    }
+}
+
+
