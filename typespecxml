@@ -79,3 +79,135 @@ static void ConvertArrayTypeToXml(XmlWriter writer, ArrayTypeProperties arrayTyp
     writer.WriteAttributeString("size", arrayType.Size.ToString());
     writer.WriteAttributeString("elementType", arrayType.ElementType.ToString());
 }
+
+private void ConvertTypePropertiesToXml(XmlWriter writer, TypeSpecProperties typeProperties, string symbolName)
+{
+    switch (typeProperties)
+    {
+        case ScalarTypeProperties scalarTypeProperties:
+            ConvertScalarTypePropertiesToXml(writer, scalarTypeProperties, symbolName);
+            break;
+        case SubrangeTypeProperties subrangeTypeProperties:
+            ConvertSubrangeTypePropertiesToXml(writer, subrangeTypeProperties, symbolName);
+            break;
+        case ArrayTypeProperties arrayTypeProperties:
+            ConvertArrayTypePropertiesToXml(writer, arrayTypeProperties, symbolName);
+            break;
+        case EnumerationTypeProperties enumerationTypeProperties:
+            ConvertEnumerationTypePropertiesToXml(writer, enumerationTypeProperties, symbolName);
+            break;
+        case RecordTypeProperties recordTypeProperties:
+            ConvertRecordTypePropertiesToXml(writer, recordTypeProperties, symbolName);
+            break;
+        // Add more cases for other property types
+    }
+}
+
+private void ConvertScalarTypePropertiesToXml(XmlWriter writer, ScalarTypeProperties scalarTypeProperties, string symbolName)
+{
+    writer.WriteStartElement("TYPE");
+    writer.WriteAttributeString("form", scalarTypeProperties.Form.ToString().ToUpper());
+    if (scalarTypeProperties.Identifier != null && symbolName == scalarTypeProperties.Identifier)
+        writer.WriteAttributeString("id", scalarTypeProperties.Identifier);
+
+    if (ShouldIncludeDetailsArea(scalarTypeProperties.Identifier, symbolName))
+    {
+        writer.WriteElementString("MIN_RANGE", scalarTypeProperties.MinRange.ToString());
+        writer.WriteElementString("MAX_RANGE", scalarTypeProperties.MaxRange.ToString());
+    }
+
+    writer.WriteEndElement(); // Close TYPE tag
+}
+
+private void ConvertSubrangeTypePropertiesToXml(XmlWriter writer, SubrangeTypeProperties subrangeTypeProperties, string symbolName)
+{
+    writer.WriteStartElement("TYPE");
+    writer.WriteAttributeString("form", subrangeTypeProperties.Form.ToString().ToUpper());
+    if (subrangeTypeProperties.Identifier != null && symbolName == subrangeTypeProperties.Identifier)
+        writer.WriteAttributeString("id", subrangeTypeProperties.Identifier);
+
+    if (ShouldIncludeDetailsArea(subrangeTypeProperties.Identifier, symbolName))
+    {
+        writer.WriteElementString("MIN_RANGE", subrangeTypeProperties.MinRange.ToString());
+        writer.WriteElementString("MAX_RANGE", subrangeTypeProperties.MaxRange.ToString());
+    }
+
+    writer.WriteEndElement(); // Close TYPE tag
+}
+
+private void ConvertArrayTypePropertiesToXml(XmlWriter writer, ArrayTypeProperties arrayTypeProperties, string symbolName)
+{
+    writer.WriteStartElement("TYPE");
+    writer.WriteAttributeString("form", arrayTypeProperties.Form.ToString().ToUpper());
+    if (arrayTypeProperties.Identifier != null && symbolName == arrayTypeProperties.Identifier)
+        writer.WriteAttributeString("id", arrayTypeProperties.Identifier);
+
+    if (ShouldIncludeDetailsArea(arrayTypeProperties.Identifier, symbolName))
+    {
+        ConvertTypePropertiesToXml(writer, arrayTypeProperties.ElementType, symbolName);
+
+        writer.WriteStartElement("INDEX");
+
+        foreach (var indexType in arrayTypeProperties.Index)
+        {
+            ConvertTypePropertiesToXml(writer, indexType, symbolName);
+        }
+
+        writer.WriteEndElement(); // Close INDEX
+    }
+
+    writer.WriteEndElement(); // Close TYPE tag
+}
+
+private void ConvertEnumerationTypePropertiesToXml(XmlWriter writer, EnumerationTypeProperties enumerationTypeProperties, string symbolName)
+{
+    writer.WriteStartElement("TYPE");
+    writer.WriteAttributeString("form", enumerationTypeProperties.Form.ToString().ToUpper());
+    if (enumerationTypeProperties.Identifier != null && symbolName == enumerationTypeProperties.Identifier)
+        writer.WriteAttributeString("id", enumerationTypeProperties.Identifier);
+
+    if (ShouldIncludeDetailsArea(enumerationTypeProperties.Identifier, symbolName))
+    {
+        writer.WriteStartElement("ITEMS");
+
+        foreach (var item in enumerationTypeProperties.Items)
+        {
+            writer.WriteElementString("ITEM", item);
+        }
+
+        writer.WriteEndElement(); // Close ITEMS
+    }
+
+    writer.WriteEndElement(); // Close TYPE tag
+}
+
+private void ConvertRecordTypePropertiesToXml(XmlWriter writer, RecordTypeProperties recordTypeProperties, string symbolName)
+{
+    writer.WriteStartElement("TYPE");
+    writer.WriteAttributeString("form", recordTypeProperties.Form.ToString().ToUpper());
+    if (recordTypeProperties.Identifier != null && symbolName == recordTypeProperties.Identifier)
+        writer.WriteAttributeString("id", recordTypeProperties.Identifier);
+
+    if (ShouldIncludeDetailsArea(recordTypeProperties.Identifier, symbolName))
+    {
+        writer.WriteStartElement("FIELDS");
+
+        foreach (var field in recordTypeProperties.Fields)
+        {
+            writer.WriteStartElement("FIELD");
+            writer.WriteAttributeString("name", field.Item1);
+            ConvertTypePropertiesToXml(writer, field.Item2, symbolName);
+            writer.WriteEndElement(); // Close FIELD
+        }
+
+        writer.WriteEndElement(); // Close FIELDS
+    }
+
+    writer.WriteEndElement(); // Close TYPE tag
+}
+
+private bool ShouldIncludeDetailsArea(string typeIdentifier, string symbolName)
+{
+    return typeIdentifier == null || typeIdentifier == symbolName;
+}
+
