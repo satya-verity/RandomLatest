@@ -1,0 +1,222 @@
+using System;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Collections.Generic;
+
+namespace OCLCMacroLanguage.Backend.Compiler
+{
+    #region Code Generation Interfaces
+
+    // Interface for generating CLR code
+    public interface ICodeGenerator
+    {
+        void Generate(ICodeProducer codeProducer);
+    }
+
+    // Interface for capturing a listing of generated CLR code
+    public interface ILister
+    {
+        ILister Parent { get; set; }
+        void AddIntoListing(string content);
+    }
+
+    // Interface for classes that produce code
+    public interface ICodeProducer
+    {
+        string ToListing();
+    }
+
+    #endregion
+
+    #region Code Generation Classes
+
+    // Class responsible for generating CLR code
+    public class CLRCodeGenerator : ICodeGenerator
+    {
+        private SemanticContext semanticContext;
+
+        public CLRCodeGenerator(SemanticContext context)
+        {
+            semanticContext = context;
+        }
+
+        public void Generate(ICodeProducer codeProducer)
+        {
+            // Implement CLR code generation here based on SemanticContext
+        }
+
+        private void EmitAssembly()
+        {
+            // Emit assembly based on AST in semanticContext
+        }
+
+        private void ReportError(ErrorContext errorContext)
+        {
+            // Report error based on errorContext
+        }
+    }
+
+    // Class responsible for producing CLR code
+    public class CodeProducer : ILister, ICodeProducer
+    {
+        public ILister Parent { get; set; }
+        private AssemblyBuilder builder;
+        private List<string> listingBuilder;
+
+        public CodeProducer()
+        {
+            listingBuilder = new List<string>();
+        }
+
+        public string ToListing()
+        {
+            return string.Join(Environment.NewLine, listingBuilder);
+        }
+
+        public void AddIntoListing(string content)
+        {
+            listingBuilder.Add(content);
+            Parent?.AddIntoListing(content);
+        }
+
+        // Other methods for code production
+    }
+
+    // Other code generation classes as described in the design
+
+    #endregion
+
+    #region Semantic Analysis Classes
+
+    // Placeholder for SemanticContext class
+    public class SemanticContext
+    {
+        // Placeholder for semantic context implementation
+    }
+
+    // Placeholder for ErrorContext class
+    public class ErrorContext
+    {
+        // Placeholder for error context implementation
+    }
+
+    #endregion
+
+    #region Code Generation Classes Continued
+
+    // Class responsible for generating program parts of the CLR code
+    public class ProgramGenerator : ICodeGenerator
+    {
+        public void Generate(ICodeProducer codeProducer)
+        {
+            // Implement ProgramGenerator class as described in the design
+        }
+    }
+
+    // Class responsible for generating procedure parts of the CLR code
+    public class ProcedureGenerator : ICodeGenerator
+    {
+        public void Generate(ICodeProducer codeProducer)
+        {
+            // Implement ProcedureGenerator class as described in the design
+        }
+    }
+
+    // Class responsible for generating statement parts of the CLR code
+    public class StatementGenerator : ICodeGenerator
+    {
+        public void Generate(ICodeProducer codeProducer)
+        {
+            // Implement StatementGenerator class as described in the design
+        }
+    }
+
+    // Class responsible for generating call statements
+    public class CallGenerator : ICodeGenerator
+    {
+        public void Generate(ICodeProducer codeProducer)
+        {
+            // Implement CallGenerator class as described in the design
+        }
+    }
+
+    // Class responsible for generating compound statements
+    public class CompoundGenerator : ICodeGenerator
+    {
+        public void Generate(ICodeProducer codeProducer)
+        {
+            // Implement CompoundGenerator class as described in the design
+        }
+    }
+
+    // Class responsible for generating assignment statements
+    public class AssignmentGenerator : ICodeGenerator
+    {
+        public void Generate(ICodeProducer codeProducer)
+        {
+            // Implement AssignmentGenerator class as described in the design
+        }
+    }
+
+    // Class responsible for generating expression statements
+    public class ExpressionGenerator : ICodeGenerator
+    {
+        public void Generate(ICodeProducer codeProducer)
+        {
+            // Implement ExpressionGenerator class as described in the design
+        }
+    }
+
+    // Class responsible for generating loop statements
+    public class LoopGenerator : ICodeGenerator
+    {
+        public void Generate(ICodeProducer codeProducer)
+        {
+            // Implement LoopGenerator class as described in the design
+        }
+    }
+
+    // Class responsible for generating if statements
+    public class IfGenerator : ICodeGenerator
+    {
+        public void Generate(ICodeProducer codeProducer)
+        {
+            // Implement IfGenerator class as described in the design
+        }
+    }
+
+    // Class responsible for generating select statements
+    public class SelectGenerator : ICodeGenerator
+    {
+        public void Generate(ICodeProducer codeProducer)
+        {
+            // Implement SelectGenerator class as described in the design
+        }
+    }
+
+    // Class responsible for generating call statements for declared procedures
+    public class CallDeclaredGenerator : ICodeGenerator
+    {
+        public void Generate(ICodeProducer codeProducer)
+        {
+            // Implement CallDeclaredGenerator class as described in the design
+        }
+    }
+
+    // Class responsible for generating call statements for standard procedures
+    public class CallStandardGenerator : ICodeGenerator
+    {
+        public void Generate(ICodeProducer codeProducer)
+        {
+            // Implement CallStandardGenerator class as described in the design
+        }
+    }
+
+    #endregion
+
+    #region Other Classes
+
+    // Placeholder for other classes as described in the design
+
+    #endregion
+}
