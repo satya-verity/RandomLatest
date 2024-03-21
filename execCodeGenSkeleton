@@ -220,3 +220,171 @@ namespace OCLCMacroLanguage.Backend.Compiler
 
     #endregion
 }
+
+using System;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Collections.Generic;
+
+namespace OCLCMacroLanguage.Backend.Compiler
+{
+    #region Code Generation Interfaces
+
+    // Interface for generating CLR code
+    public interface ICodeGenerator
+    {
+        void Generate(ICodeProducer codeProducer);
+    }
+
+    // Interface for capturing a listing of generated CLR code
+    public interface ILister
+    {
+        ILister Parent { get; set; }
+        void AddIntoListing(string content);
+    }
+
+    // Interface for classes that produce code
+    public interface ICodeProducer
+    {
+        string ToListing();
+    }
+
+    #endregion
+
+    #region Code Producer Classes
+
+    // Class responsible for producing CLR code
+    public class CodeProducer : ILister, ICodeProducer
+    {
+        public ILister Parent { get; set; }
+        private List<string> listingBuilder;
+
+        public CodeProducer()
+        {
+            listingBuilder = new List<string>();
+        }
+
+        public string ToListing()
+        {
+            return string.Join(Environment.NewLine, listingBuilder);
+        }
+
+        public void AddIntoListing(string content)
+        {
+            listingBuilder.Add(content);
+            Parent?.AddIntoListing(content);
+        }
+    }
+
+    // Class responsible for producing ModuleBuilder
+    public class ModuleProducer : ILister, ICodeProducer
+    {
+        public ILister Parent { get; set; }
+        private List<string> listingBuilder;
+
+        public ModuleProducer()
+        {
+            listingBuilder = new List<string>();
+        }
+
+        public string ToListing()
+        {
+            return string.Join(Environment.NewLine, listingBuilder);
+        }
+
+        public void AddIntoListing(string content)
+        {
+            listingBuilder.Add(content);
+            Parent?.AddIntoListing(content);
+        }
+    }
+
+    // Class responsible for producing TypeBuilder
+    public class TypeProducer : ILister, ICodeProducer
+    {
+        public ILister Parent { get; set; }
+        private List<string> listingBuilder;
+
+        public TypeProducer()
+        {
+            listingBuilder = new List<string>();
+        }
+
+        public string ToListing()
+        {
+            return string.Join(Environment.NewLine, listingBuilder);
+        }
+
+        public void AddIntoListing(string content)
+        {
+            listingBuilder.Add(content);
+            Parent?.AddIntoListing(content);
+        }
+    }
+
+    // Class responsible for producing MethodBuilder
+    public class MethodProducer : ILister, ICodeProducer
+    {
+        public ILister Parent { get; set; }
+        private List<string> listingBuilder;
+
+        public MethodProducer()
+        {
+            listingBuilder = new List<string>();
+        }
+
+        public string ToListing()
+        {
+            return string.Join(Environment.NewLine, listingBuilder);
+        }
+
+        public void AddIntoListing(string content)
+        {
+            listingBuilder.Add(content);
+            Parent?.AddIntoListing(content);
+        }
+    }
+
+    // Class responsible for producing ILGenerator
+    public class ILProducer : ILister, ICodeProducer
+    {
+        public ILister Parent { get; set; }
+        private List<string> listingBuilder;
+
+        public ILProducer()
+        {
+            listingBuilder = new List<string>();
+        }
+
+        public string ToListing()
+        {
+            return string.Join(Environment.NewLine, listingBuilder);
+        }
+
+        public void AddIntoListing(string content)
+        {
+            listingBuilder.Add(content);
+            Parent?.AddIntoListing(content);
+        }
+    }
+
+    #endregion
+
+    #region Semantic Analysis Classes
+
+    // Placeholder for SemanticContext class
+    public class SemanticContext
+    {
+        // Placeholder for semantic context implementation
+    }
+
+    // Placeholder for ErrorContext class
+    public class ErrorContext
+    {
+        // Placeholder for error context implementation
+    }
+
+    #endregion
+}
+
+
