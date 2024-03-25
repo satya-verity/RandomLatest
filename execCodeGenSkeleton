@@ -553,3 +553,228 @@ namespace OCLCMacroLanguage.Backend.Compiler
     #endregion
 }
 
+using System;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Collections.Generic;
+
+namespace OCLCMacroLanguage.Backend.Compiler
+{
+    #region Code Generation Interfaces
+
+    // Interface for capturing a listing of the generated CLR code
+    public interface ILister
+    {
+        ILister Parent { get; set; }
+        void AddIntoListing(string content);
+    }
+
+    // Interface for classes that produce code
+    public interface ICodeProducer
+    {
+    }
+
+    #endregion
+
+    #region Code Producer Classes
+
+    // Class responsible for producing CLR code
+    public class CodeProducer : ILister, ICodeProducer
+    {
+        public ILister Parent { get; set; }
+        private List<string> listingBuilder;
+        private AssemblyBuilder builder;
+
+        public CodeProducer()
+        {
+            listingBuilder = new List<string>();
+        }
+
+        public string ToListing()
+        {
+            return string.Join(Environment.NewLine, listingBuilder);
+        }
+
+        public void AddIntoListing(string content)
+        {
+            listingBuilder.Add(content);
+            Parent?.AddIntoListing(content);
+        }
+
+        // Constructor
+        public CodeProducer(AssemblyBuilder assemblyBuilder)
+        {
+            builder = assemblyBuilder;
+        }
+
+        // Method to define a module
+        public ModuleProducer DefineModule()
+        {
+            return new ModuleProducer(builder.DefineDynamicModule("DynamicModule"));
+        }
+
+        // Method to convert the produced code to an Assembly
+        public Assembly ToAssembly()
+        {
+            return builder.Assembly;
+        }
+    }
+
+    // Class responsible for producing ModuleBuilder
+    public class ModuleProducer : ILister, ICodeProducer
+    {
+        public ILister Parent { get; set; }
+        private List<string> listingBuilder;
+        private ModuleBuilder builder;
+
+        public ModuleProducer()
+        {
+            listingBuilder = new List<string>();
+        }
+
+        public string ToListing()
+        {
+            return string.Join(Environment.NewLine, listingBuilder);
+        }
+
+        public void AddIntoListing(string content)
+        {
+            listingBuilder.Add(content);
+            Parent?.AddIntoListing(content);
+        }
+
+        // Constructor
+        public ModuleProducer(ModuleBuilder moduleBuilder)
+        {
+            builder = moduleBuilder;
+        }
+
+        // Method to define a type
+        public TypeProducer DefineType(string name)
+        {
+            return new TypeProducer(builder.DefineType(name));
+        }
+    }
+
+    // Class responsible for producing TypeBuilder
+    public class TypeProducer : ILister, ICodeProducer
+    {
+        public ILister Parent { get; set; }
+        private List<string> listingBuilder;
+        private TypeBuilder builder;
+
+        public TypeProducer()
+        {
+            listingBuilder = new List<string>();
+        }
+
+        public string ToListing()
+        {
+            return string.Join(Environment.NewLine, listingBuilder);
+        }
+
+        public void AddIntoListing(string content)
+        {
+            listingBuilder.Add(content);
+            Parent?.AddIntoListing(content);
+        }
+
+        // Constructor
+        public TypeProducer(TypeBuilder typeBuilder)
+        {
+            builder = typeBuilder;
+        }
+
+        // Method to add interface implementation
+        public void AddInterfaceImplementation(Type interfaceType)
+        {
+            builder.AddInterfaceImplementation(interfaceType);
+        }
+
+        // Method to define a method
+        public MethodProducer DefineMethod(string name, MethodAttributes attributes, Type returnType, Type[] parameterTypes)
+        {
+            return new MethodProducer(builder.DefineMethod(name, attributes, returnType, parameterTypes));
+        }
+    }
+
+    // Class responsible for producing MethodBuilder
+    public class MethodProducer : ILister, ICodeProducer
+    {
+        public ILister Parent { get; set; }
+        private List<string> listingBuilder;
+        private MethodBuilder builder;
+
+        public MethodProducer()
+        {
+            listingBuilder = new List<string>();
+        }
+
+        public string ToListing()
+        {
+            return string.Join(Environment.NewLine, listingBuilder);
+        }
+
+        public void AddIntoListing(string content)
+        {
+            listingBuilder.Add(content);
+            Parent?.AddIntoListing(content);
+        }
+
+        // Constructor
+        public MethodProducer(MethodBuilder methodBuilder)
+        {
+            builder = methodBuilder;
+        }
+
+        // Method to get IL producer
+        public ILProducer GetILProducer()
+        {
+            return new ILProducer(builder.GetILGenerator());
+        }
+    }
+
+    // Class responsible for producing ILGenerator
+    public class ILProducer : ILister, ICodeProducer
+    {
+        public ILister Parent { get; set; }
+        private List<string> listingBuilder;
+        private ILGenerator generator;
+
+        public ILProducer()
+        {
+            listingBuilder = new List<string>();
+        }
+
+        public string ToListing()
+        {
+            return string.Join(Environment.NewLine, listingBuilder);
+        }
+
+        public void AddIntoListing(string content)
+        {
+            listingBuilder.Add(content);
+            Parent?.AddIntoListing(content);
+        }
+
+        // Constructor
+        public ILProducer(ILGenerator ilGenerator)
+        {
+            generator = ilGenerator;
+        }
+
+        // Method to emit CLR operation
+        public void Emit(OpCode opcode)
+        {
+            generator.Emit(opcode);
+        }
+
+        // Method to emit CLR operation with an argument
+        public void Emit(OpCode opcode, object operand)
+        {
+            generator.Emit(opcode, operand);
+        }
+    }
+
+    #endregion
+}
