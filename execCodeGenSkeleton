@@ -576,6 +576,30 @@ namespace OCLCMacroLanguage.Backend.Compiler
 
     #endregion
 
+  using System;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Collections.Generic;
+
+namespace OCLCMacroLanguage.Backend.Compiler
+{
+    #region Code Generation Interfaces
+
+    // Interface for capturing a listing of the generated CLR code
+    public interface ILister
+    {
+        ILister Parent { get; set; }
+        void AddIntoListing(string content);
+    }
+
+    // Interface for classes that produce code
+    public interface ICodeProducer
+    {
+        string ToListing();
+    }
+
+    #endregion
+
     #region Code Producer Classes
 
     // Class responsible for producing CLR code
@@ -608,9 +632,9 @@ namespace OCLCMacroLanguage.Backend.Compiler
         }
 
         // Method to define a module
-        public ModuleProducer DefineModule()
+        public ModuleProducer DefineModule(string name)
         {
-            return new ModuleProducer(builder.DefineDynamicModule("DynamicModule"));
+            return new ModuleProducer(builder.DefineDynamicModule(name));
         }
 
         // Method to convert the produced code to an Assembly
