@@ -500,3 +500,67 @@ namespace MacroRunner.Backend.Compiler.Code.Tests
         }
     }
 }
+
+using System.Reflection.Emit;
+using Xunit;
+
+namespace MacroRunner.Backend.Compiler.Code.Tests
+{
+    public class ILProducerTests
+    {
+        [Fact]
+        public void ILProducer_Constructor_ShouldSetILGenerator()
+        {
+            // Arrange
+            var ilGenerator = new DynamicMethod("TestMethod", typeof(void), new Type[0]).GetILGenerator();
+
+            // Act
+            var ilProducer = new ILProducer(ilGenerator);
+
+            // Assert
+            Assert.NotNull(ilProducer);
+            Assert.Equal(ilGenerator, ilProducer.Generator);
+        }
+
+        [Fact]
+        public void ILProducer_AddIntoListing_ShouldAddContentToListing()
+        {
+            // Arrange
+            var ilGenerator = new DynamicMethod("TestMethod", typeof(void), new Type[0]).GetILGenerator();
+            var ilProducer = new ILProducer(ilGenerator);
+
+            // Act
+            ilProducer.AddIntoListing("Test Content");
+
+            // Assert
+            Assert.Contains("Test Content", ilProducer.ToListing());
+        }
+
+        [Fact]
+        public void ILProducer_Emit_ShouldEmitOpCode()
+        {
+            // Arrange
+            var dynamicMethod = new DynamicMethod("TestMethod", typeof(void), new Type[0]);
+            var ilGenerator = dynamicMethod.GetILGenerator();
+            var ilProducer = new ILProducer(ilGenerator);
+
+            // Act
+            ilProducer.Emit(OpCodes.Ret);
+
+            // Assert
+            // No exception should be thrown
+        }
+
+        [Fact]
+        public void ILProducer_ParentShouldBeNullByDefault()
+        {
+            // Arrange
+            var ilGenerator = new DynamicMethod("TestMethod", typeof(void), new Type[0]).GetILGenerator();
+            var ilProducer = new ILProducer(ilGenerator);
+
+            // Assert
+            Assert.Null(ilProducer.Parent);
+        }
+    }
+}
+
