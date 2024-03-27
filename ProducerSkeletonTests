@@ -633,4 +633,7 @@ namespace MacroRunner.Backend.Compiler.Code.Tests
         }
     }
 }
-
+ public string GetAssemblyName()
+        {
+            return builder.Assembly.GetName().Name;
+        }
