@@ -1,0 +1,502 @@
+using System;
+using System.Reflection;
+using System.Reflection.Emit;
+using Xunit;
+
+namespace MacroRunner.Backend.Compiler.Code.Tests
+{
+    public class CodeProducerTests
+    {
+        [Fact]
+        public void CodeProducer_ConstructWithAssemblyBuilder_ShouldSetBuilder()
+        {
+            // Arrange
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run);
+            
+            // Act
+            var codeProducer = new CodeProducer(assemblyBuilder);
+
+            // Assert
+            Assert.Equal(assemblyBuilder, codeProducer.Builder);
+        }
+
+        [Fact]
+        public void CodeProducer_ToAssembly_ShouldReturnAssembly()
+        {
+            // Arrange
+            var codeProducer = new CodeProducer("TestAssembly");
+
+            // Act
+            var assembly = codeProducer.ToAssembly();
+
+            // Assert
+            Assert.NotNull(assembly);
+            Assert.Equal("TestAssembly", assembly.FullName);
+        }
+    }
+
+    public class ModuleProducerTests
+    {
+        [Fact]
+        public void ModuleProducer_DefineType_ShouldReturnTypeProducer()
+        {
+            // Arrange
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run);
+            var moduleBuilder = assemblyBuilder.DefineDynamicModule("TestModule");
+            var moduleProducer = new ModuleProducer(moduleBuilder);
+
+            // Act
+            var typeProducer = moduleProducer.DefineType("TestClass");
+
+            // Assert
+            Assert.NotNull(typeProducer);
+        }
+    }
+
+    public class TypeProducerTests
+    {
+        [Fact]
+        public void TypeProducer_DefineMethod_ShouldReturnMethodProducer()
+        {
+            // Arrange
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run);
+            var moduleBuilder = assemblyBuilder.DefineDynamicModule("TestModule");
+            var typeBuilder = moduleBuilder.DefineType("TestClass");
+            var typeProducer = new TypeProducer(typeBuilder);
+
+            // Act
+            var methodProducer = typeProducer.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(void), new Type[0]);
+
+            // Assert
+            Assert.NotNull(methodProducer);
+        }
+    }
+
+    public class MethodProducerTests
+    {
+        [Fact]
+        public void MethodProducer_GetILProducer_ShouldReturnILProducer()
+        {
+            // Arrange
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run);
+            var moduleBuilder = assemblyBuilder.DefineDynamicModule("TestModule");
+            var typeBuilder = moduleBuilder.DefineType("TestClass");
+            var methodBuilder = typeBuilder.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(void), new Type[0]);
+            var methodProducer = new MethodProducer(methodBuilder);
+
+            // Act
+            var ilProducer = methodProducer.GetILProducer();
+
+            // Assert
+            Assert.NotNull(ilProducer);
+        }
+    }
+}
+using System;
+using System.Reflection;
+using System.Reflection.Emit;
+using Xunit;
+
+namespace MacroRunner.Backend.Compiler.Code.Tests
+{
+    public class CodeProducerTests
+    {
+        [Fact]
+        public void CodeProducer_ConstructWithAssemblyBuilder_ShouldSetBuilder()
+        {
+            // Arrange
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run);
+            
+            // Act
+            var codeProducer = new CodeProducer(assemblyBuilder);
+
+            // Assert
+            Assert.Equal(assemblyBuilder, codeProducer.Builder);
+        }
+
+        [Fact]
+        public void CodeProducer_ToAssembly_ShouldReturnAssembly()
+        {
+            // Arrange
+            var codeProducer = new CodeProducer("TestAssembly");
+
+            // Act
+            var assembly = codeProducer.ToAssembly();
+
+            // Assert
+            Assert.NotNull(assembly);
+            Assert.Equal("TestAssembly", assembly.FullName);
+        }
+
+        [Fact]
+        public void CodeProducer_AddIntoListing_ShouldAddContentToListing()
+        {
+            // Arrange
+            var codeProducer = new CodeProducer("TestAssembly");
+
+            // Act
+            codeProducer.AddIntoListing("Test Content");
+
+            // Assert
+            Assert.Contains("Test Content", codeProducer.ToListing());
+        }
+    }
+
+    public class ModuleProducerTests
+    {
+        [Fact]
+        public void ModuleProducer_DefineType_ShouldReturnTypeProducer()
+        {
+            // Arrange
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run);
+            var moduleBuilder = assemblyBuilder.DefineDynamicModule("TestModule");
+            var moduleProducer = new ModuleProducer(moduleBuilder);
+
+            // Act
+            var typeProducer = moduleProducer.DefineType("TestClass");
+
+            // Assert
+            Assert.NotNull(typeProducer);
+        }
+
+        [Fact]
+        public void ModuleProducer_AddIntoListing_ShouldAddContentToListing()
+        {
+            // Arrange
+            var moduleBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run)
+                                              .DefineDynamicModule("TestModule");
+            var moduleProducer = new ModuleProducer(moduleBuilder);
+
+            // Act
+            moduleProducer.AddIntoListing("Test Content");
+
+            // Assert
+            Assert.Contains("Test Content", moduleProducer.ToListing());
+        }
+    }
+
+    public class TypeProducerTests
+    {
+        [Fact]
+        public void TypeProducer_DefineMethod_ShouldReturnMethodProducer()
+        {
+            // Arrange
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run);
+            var moduleBuilder = assemblyBuilder.DefineDynamicModule("TestModule");
+            var typeBuilder = moduleBuilder.DefineType("TestClass");
+            var typeProducer = new TypeProducer(typeBuilder);
+
+            // Act
+            var methodProducer = typeProducer.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(void), new Type[0]);
+
+            // Assert
+            Assert.NotNull(methodProducer);
+        }
+
+        [Fact]
+        public void TypeProducer_AddInterfaceImplementation_ShouldImplementInterface()
+        {
+            // Arrange
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run);
+            var moduleBuilder = assemblyBuilder.DefineDynamicModule("TestModule");
+            var typeBuilder = moduleBuilder.DefineType("TestClass");
+            var typeProducer = new TypeProducer(typeBuilder);
+            var interfaceType = typeof(IDisposable);
+
+            // Act
+            typeProducer.AddInterfaceImplementation(interfaceType);
+
+            // Assert
+            Assert.True(typeBuilder.GetInterfaces().Contains(interfaceType));
+        }
+    }
+
+    public class MethodProducerTests
+    {
+        [Fact]
+        public void MethodProducer_GetILProducer_ShouldReturnILProducer()
+        {
+            // Arrange
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run);
+            var moduleBuilder = assemblyBuilder.DefineDynamicModule("TestModule");
+            var typeBuilder = moduleBuilder.DefineType("TestClass");
+            var methodBuilder = typeBuilder.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(void), new Type[0]);
+            var methodProducer = new MethodProducer(methodBuilder);
+
+            // Act
+            var ilProducer = methodProducer.GetILProducer();
+
+            // Assert
+            Assert.NotNull(ilProducer);
+        }
+
+        [Fact]
+        public void MethodProducer_AddIntoListing_ShouldAddContentToListing()
+        {
+            // Arrange
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run);
+            var moduleBuilder = assemblyBuilder.DefineDynamicModule("TestModule");
+            var typeBuilder = moduleBuilder.DefineType("TestClass");
+            var methodBuilder = typeBuilder.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(void), new Type[0]);
+            var methodProducer = new MethodProducer(methodBuilder);
+
+            // Act
+            methodProducer.AddIntoListing("Test Content");
+
+            // Assert
+            Assert.Contains("Test Content", methodProducer.ToListing());
+        }
+    }
+}
+using System;
+using System.Reflection;
+using System.Reflection.Emit;
+using Xunit;
+
+namespace MacroRunner.Backend.Compiler.Code.Tests
+{
+    public class CodeProducerTests
+    {
+        [Fact]
+        public void CodeProducer_ConstructWithAssemblyBuilder_ShouldSetBuilder()
+        {
+            // Arrange
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run);
+            
+            // Act
+            var codeProducer = new CodeProducer(assemblyBuilder);
+
+            // Assert
+            Assert.Equal(assemblyBuilder, codeProducer.Builder);
+        }
+
+        [Fact]
+        public void CodeProducer_ToAssembly_ShouldReturnAssembly()
+        {
+            // Arrange
+            var codeProducer = new CodeProducer("TestAssembly");
+
+            // Act
+            var assembly = codeProducer.ToAssembly();
+
+            // Assert
+            Assert.NotNull(assembly);
+            Assert.Equal("TestAssembly", assembly.FullName);
+        }
+
+        [Fact]
+        public void CodeProducer_AddIntoListing_ShouldAddContentToListing()
+        {
+            // Arrange
+            var codeProducer = new CodeProducer("TestAssembly");
+
+            // Act
+            codeProducer.AddIntoListing("Test Content");
+
+            // Assert
+            Assert.Contains("Test Content", codeProducer.ToListing());
+        }
+
+        [Fact]
+        public void CodeProducer_ParentShouldBeNullByDefault()
+        {
+            // Arrange
+            var codeProducer = new CodeProducer("TestAssembly");
+
+            // Assert
+            Assert.Null(codeProducer.Parent);
+        }
+    }
+
+    public class ModuleProducerTests
+    {
+        [Fact]
+        public void ModuleProducer_DefineType_ShouldReturnTypeProducer()
+        {
+            // Arrange
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run);
+            var moduleBuilder = assemblyBuilder.DefineDynamicModule("TestModule");
+            var moduleProducer = new ModuleProducer(moduleBuilder);
+
+            // Act
+            var typeProducer = moduleProducer.DefineType("TestClass");
+
+            // Assert
+            Assert.NotNull(typeProducer);
+        }
+
+        [Fact]
+        public void ModuleProducer_AddIntoListing_ShouldAddContentToListing()
+        {
+            // Arrange
+            var moduleBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run)
+                                              .DefineDynamicModule("TestModule");
+            var moduleProducer = new ModuleProducer(moduleBuilder);
+
+            // Act
+            moduleProducer.AddIntoListing("Test Content");
+
+            // Assert
+            Assert.Contains("Test Content", moduleProducer.ToListing());
+        }
+
+        [Fact]
+        public void ModuleProducer_ParentShouldBeNullByDefault()
+        {
+            // Arrange
+            var moduleBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run)
+                                              .DefineDynamicModule("TestModule");
+            var moduleProducer = new ModuleProducer(moduleBuilder);
+
+            // Assert
+            Assert.Null(moduleProducer.Parent);
+        }
+    }
+
+    public class TypeProducerTests
+    {
+        [Fact]
+        public void TypeProducer_DefineMethod_ShouldReturnMethodProducer()
+        {
+            // Arrange
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run);
+            var moduleBuilder = assemblyBuilder.DefineDynamicModule("TestModule");
+            var typeBuilder = moduleBuilder.DefineType("TestClass");
+            var typeProducer = new TypeProducer(typeBuilder);
+
+            // Act
+            var methodProducer = typeProducer.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(void), new Type[0]);
+
+            // Assert
+            Assert.NotNull(methodProducer);
+        }
+
+        [Fact]
+        public void TypeProducer_AddInterfaceImplementation_ShouldImplementInterface()
+        {
+            // Arrange
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run);
+            var moduleBuilder = assemblyBuilder.DefineDynamicModule("TestModule");
+            var typeBuilder = moduleBuilder.DefineType("TestClass");
+            var typeProducer = new TypeProducer(typeBuilder);
+            var interfaceType = typeof(IDisposable);
+
+            // Act
+            typeProducer.AddInterfaceImplementation(interfaceType);
+
+            // Assert
+            Assert.True(typeBuilder.GetInterfaces().Contains(interfaceType));
+        }
+
+        [Fact]
+        public void TypeProducer_ParentShouldBeNullByDefault()
+        {
+            // Arrange
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run);
+            var moduleBuilder = assemblyBuilder.DefineDynamicModule("TestModule");
+            var typeBuilder = moduleBuilder.DefineType("TestClass");
+            var typeProducer = new TypeProducer(typeBuilder);
+
+            // Assert
+            Assert.Null(typeProducer.Parent);
+        }
+    }
+
+    public class MethodProducerTests
+    {
+        [Fact]
+        public void MethodProducer_GetILProducer_ShouldReturnILProducer()
+        {
+            // Arrange
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run);
+            var moduleBuilder = assemblyBuilder.DefineDynamicModule("TestModule");
+            var typeBuilder = moduleBuilder.DefineType("TestClass");
+            var methodBuilder = typeBuilder.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(void), new Type[0]);
+            var methodProducer = new MethodProducer(methodBuilder);
+
+            // Act
+            var ilProducer = methodProducer.GetILProducer();
+
+            // Assert
+            Assert.NotNull(ilProducer);
+        }
+
+        [Fact]
+        public void MethodProducer_AddIntoListing_ShouldAddContentToListing()
+        {
+            // Arrange
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run);
+            var moduleBuilder = assemblyBuilder.DefineDynamicModule("TestModule");
+            var typeBuilder = moduleBuilder.DefineType("TestClass");
+            var methodBuilder = typeBuilder.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(void), new Type[0]);
+            var methodProducer = new MethodProducer(methodBuilder);
+
+            // Act
+            methodProducer.AddIntoListing("Test Content");
+
+            // Assert
+            Assert.Contains("Test Content", methodProducer.ToListing());
+        }
+
+        [Fact]
+        public void MethodProducer_ParentShouldBeNullByDefault()
+        {
+            // Arrange
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run);
+            var moduleBuilder = assemblyBuilder.DefineDynamicModule("TestModule");
+            var typeBuilder = moduleBuilder.DefineType("TestClass");
+            var methodBuilder = typeBuilder.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(void), new Type[0]);
+            var methodProducer = new MethodProducer(methodBuilder);
+
+            // Assert
+            Assert.Null(methodProducer.Parent);
+        }
+    }
+
+    public class ILProducerTests
+    {
+        [Fact]
+        public void ILProducer_AddIntoListing_ShouldAddContentToListing()
+        {
+            // Arrange
+            var ilGenerator = new DynamicMethod("TestMethod", typeof(void), new Type[0]).GetILGenerator();
+            var ilProducer = new ILProducer(ilGenerator);
+
+            // Act
+            ilProducer.AddIntoListing("Test Content");
+
+            // Assert
+            Assert.Contains("Test Content", ilProducer.ToListing());
+        }
+
+        [Fact]
+        public void ILProducer_ParentShouldBeNullByDefault()
+        {
+            // Arrange
+            var ilGenerator = new DynamicMethod("TestMethod
+        [Fact]
+        public void ILProducer_AddIntoListing_ShouldAddContentToListing()
+        {
+            // Arrange
+            var ilGenerator = new DynamicMethod("TestMethod", typeof(void), new Type[0]).GetILGenerator();
+            var ilProducer = new ILProducer(ilGenerator);
+
+            // Act
+            ilProducer.AddIntoListing("Test Content");
+
+            // Assert
+            Assert.Contains("Test Content", ilProducer.ToListing());
+        }
+
+        [Fact]
+        public void ILProducer_ParentShouldBeNullByDefault()
+        {
+            // Arrange
+            var ilGenerator = new DynamicMethod("TestMethod", typeof(void), new Type[0]).GetILGenerator();
+            var ilProducer = new ILProducer(ilGenerator);
+
+            // Assert
+            Assert.Null(ilProducer.Parent);
+        }
+    }
+}
