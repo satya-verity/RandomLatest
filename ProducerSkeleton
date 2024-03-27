@@ -1,0 +1,254 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection.Emit;
+using System.Reflection;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace MacroRunner.Backend.Compiler.Code
+{
+    public class CodeProducer : ILister, ICodeProducer
+    {
+        public ILister Parent { get; set; }
+        private List<string> listingBuilder;
+        private AssemblyBuilder builder;
+        private AssemblyName assemblyName;
+
+        public CodeProducer(string name)
+        {
+            listingBuilder = new List<string>();
+            this.assemblyName = new AssemblyName(name);
+            builder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndSave);
+        }
+        public CodeProducer(AssemblyBuilder assemblyBuilder)
+        {
+            listingBuilder = new List<string>();
+            builder = assemblyBuilder;
+        }      
+
+        public void AddIntoListing(string content)
+        {
+            listingBuilder.Add(content);
+            Parent?.AddIntoListing(content);
+        }
+
+        public ModuleProducer DefineModule(string name)
+        {
+            return new ModuleProducer(builder.DefineDynamicModule(name));
+        }
+
+        public Assembly ToAssembly()
+        {
+            return Assembly.Load(this.assemblyName);
+        }
+        public string ToListing()
+        {
+            return string.Join(Environment.NewLine, listingBuilder);
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection.Emit;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace MacroRunner.Backend.Compiler.Code
+{
+    public class ILProducer
+    {
+        public ILister Parent { get; set; }
+        private List<string> listingBuilder;
+        private ILGenerator generator;
+
+        public ILProducer()
+        {
+            listingBuilder = new List<string>();
+        }
+
+        public ILProducer(ILGenerator ilGenerator)
+        {
+            listingBuilder = new List<string>();
+            generator = ilGenerator;
+        }
+
+        public string ToListing()
+        {
+            return string.Join(Environment.NewLine, listingBuilder);
+        }
+
+        public void AddIntoListing(string content)
+        {
+            listingBuilder.Add(content);
+            Parent?.AddIntoListing(content);
+        }
+
+        public void Emit(OpCode opcode)
+        {
+            generator.Emit(opcode);
+        }
+      
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection.Emit;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace MacroRunner.Backend.Compiler.Code
+{
+    public class MethodProducer
+    {
+        public ILister Parent { get; set; }
+        private List<string> listingBuilder;
+        private MethodBuilder builder;
+
+        public MethodProducer()
+        {
+            listingBuilder = new List<string>();
+        }
+
+        public MethodProducer(MethodBuilder methodBuilder)
+        {
+            listingBuilder = new List<string>();
+            builder = methodBuilder;
+        }
+
+        public string ToListing()
+        {
+            return string.Join(Environment.NewLine, listingBuilder);
+        }
+
+        public void AddIntoListing(string content)
+        {
+            listingBuilder.Add(content);
+            Parent?.AddIntoListing(content);
+        }
+
+        public ILProducer GetILProducer()
+        {
+            return new ILProducer(builder.GetILGenerator());
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection.Emit;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace MacroRunner.Backend.Compiler.Code
+{
+    public class ModuleProducer: ILister, ICodeProducer
+    {
+        public ILister Parent { get; set; }
+        private List<string> listingBuilder;
+        private ModuleBuilder builder;
+
+        public ModuleProducer()
+        {
+            listingBuilder = new List<string>();
+        }
+        public ModuleProducer(ModuleBuilder moduleBuilder)
+        {
+            listingBuilder = new List<string>();
+            builder = moduleBuilder;
+        }
+
+        public string ToListing()
+        {
+            return string.Join(Environment.NewLine, listingBuilder);
+        }
+
+        public void AddIntoListing(string content)
+        {
+            listingBuilder.Add(content);
+            Parent?.AddIntoListing(content);
+        }      
+
+        public TypeProducer DefineType(string name)
+        {
+            return new TypeProducer(builder.DefineType(name));
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection.Emit;
+using System.Reflection;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace MacroRunner.Backend.Compiler.Code
+{
+    public class TypeProducer: ILister, ICodeProducer
+    {
+        public ILister Parent { get; set; }
+        private List<string> listingBuilder;
+        private TypeBuilder builder;
+
+        public TypeProducer()
+        {
+            listingBuilder = new List<string>();
+        }
+        public TypeProducer(TypeBuilder typeBuilder)
+        {
+            listingBuilder = new List<string>();
+            builder = typeBuilder;
+        }
+
+        public string ToListing()
+        {
+            return string.Join(Environment.NewLine, listingBuilder);
+        }
+
+        public void AddIntoListing(string content)
+        {
+            listingBuilder.Add(content);
+            Parent?.AddIntoListing(content);
+        }       
+
+        public void AddInterfaceImplementation(Type interfaceType)
+        {
+            builder.AddInterfaceImplementation(interfaceType);
+        }
+
+        public MethodProducer DefineMethod(string name, MethodAttributes attributes, Type returnType, Type[] parameterTypes)
+        {
+            return new MethodProducer(builder.DefineMethod(name, attributes, returnType, parameterTypes));
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace MacroRunner.Backend.Compiler
+{
+    public interface ICodeProducer
+    {
+        string ToListing();
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace MacroRunner.Backend.Compiler
+{
+    public interface ILister
+    {
+        ILister Parent { get; set; }
+        void AddIntoListing(string content);
+    }
+}
