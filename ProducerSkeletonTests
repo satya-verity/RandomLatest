@@ -563,4 +563,74 @@ namespace MacroRunner.Backend.Compiler.Code.Tests
         }
     }
 }
+using System.Reflection;
+using System.Reflection.Emit;
+using Xunit;
+
+namespace MacroRunner.Backend.Compiler.Code.Tests
+{
+    public class CodeProducerTests
+    {
+        [Fact]
+        public void CodeProducer_Constructor_ShouldCreateAssemblyBuilderWithGivenName()
+        {
+            // Arrange
+            string assemblyName = "TestAssembly";
+
+            // Act
+            var codeProducer = new CodeProducer(assemblyName);
+
+            // Assert
+            Assert.NotNull(codeProducer);
+            Assert.Equal(assemblyName, codeProducer.AssemblyBuilder.GetName().Name);
+        }
+
+        [Fact]
+        public void CodeProducer_DefineModule_ShouldReturnModuleProducerWithCorrectName()
+        {
+            // Arrange
+            var codeProducer = new CodeProducer("TestAssembly");
+            string moduleName = "TestModule";
+
+            // Act
+            var moduleProducer = codeProducer.DefineModule(moduleName);
+
+            // Assert
+            Assert.NotNull(moduleProducer);
+            Assert.Equal(moduleName, moduleProducer.Builder.Name);
+        }
+
+        [Fact]
+        public void CodeProducer_ToAssembly_ShouldReturnGeneratedAssembly()
+        {
+            // Arrange
+            var codeProducer = new CodeProducer("TestAssembly");
+            var moduleProducer = codeProducer.DefineModule("TestModule");
+            var typeProducer = moduleProducer.DefineType("TestClass");
+
+            // Act
+            var assembly = codeProducer.ToAssembly();
+
+            // Assert
+            Assert.NotNull(assembly);
+            Assert.Equal("TestAssembly", assembly.GetName().Name);
+        }
+
+        [Fact]
+        public void CodeProducer_ToListing_ShouldReturnStringRepresentationOfListing()
+        {
+            // Arrange
+            var codeProducer = new CodeProducer("TestAssembly");
+            codeProducer.AddIntoListing("Line 1");
+            codeProducer.AddIntoListing("Line 2");
+
+            // Act
+            var listing = codeProducer.ToListing();
+
+            // Assert
+            Assert.Contains("Line 1", listing);
+            Assert.Contains("Line 2", listing);
+        }
+    }
+}
 
