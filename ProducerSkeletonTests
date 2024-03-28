@@ -637,3 +637,180 @@ namespace MacroRunner.Backend.Compiler.Code.Tests
         {
             return builder.Assembly.GetName().Name;
         }
+
+using Moq;
+using System.Reflection;
+using System.Reflection.Emit;
+using Xunit;
+
+namespace YourNamespace.Tests
+{
+    public class CodeProducerTests
+    {
+        [Fact]
+        public void CodeProducer_DefineModule_ShouldReturnModuleProducer()
+        {
+            // Arrange
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run);
+            var codeProducer = new CodeProducer(assemblyBuilder);
+
+            // Act
+            var moduleProducer = codeProducer.DefineModule("TestModule");
+
+            // Assert
+            Assert.NotNull(moduleProducer);
+            Assert.IsType<ModuleProducer>(moduleProducer);
+        }
+
+        [Fact]
+        public void CodeProducer_ToListing_ShouldReturnConcatenatedListing()
+        {
+            // Arrange
+            var codeProducer = new CodeProducer("TestAssembly");
+            codeProducer.AddIntoListing("Line 1");
+            codeProducer.AddIntoListing("Line 2");
+
+            // Act
+            var result = codeProducer.ToListing();
+
+            // Assert
+            Assert.Equal("Line 1" + Environment.NewLine + "Line 2", result);
+        }
+
+        [Fact]
+        public void CodeProducer_ToAssembly_ShouldReturnValidAssembly()
+        {
+            // Arrange
+            var codeProducer = new CodeProducer("TestAssembly");
+            var moduleProducer = codeProducer.DefineModule("TestModule");
+            moduleProducer.AddIntoListing("Some module content");
+
+            // Act
+            var assembly = codeProducer.ToAssembly();
+
+            // Assert
+            Assert.NotNull(assembly);
+            Assert.Equal("TestAssembly", assembly.GetName().Name);
+        }
+
+        [Fact]
+        public void CodeProducer_AddIntoListing_WithParent_ShouldCallParentAddIntoListing()
+        {
+            // Arrange
+            var parentMock = new Mock<ILister>();
+            var codeProducer = new CodeProducer("TestAssembly");
+            codeProducer.Parent = parentMock.Object;
+
+            // Act
+            codeProducer.AddIntoListing("Some content");
+
+            // Assert
+            parentMock.Verify(p => p.AddIntoListing(It.IsAny<string>()), Times.Once);
+        }
+
+        [Fact]
+        public void CodeProducer_AddIntoListing_WithoutParent_ShouldNotThrowException()
+        {
+            // Arrange
+            var codeProducer = new CodeProducer("TestAssembly");
+
+            // Act & Assert
+            Assert.Null(codeProducer.Parent); // Ensure Parent is null initially
+
+            // No exception should be thrown
+            codeProducer.AddIntoListing("Some content");
+        }
+
+        [Fact]
+        public void CodeProducer_ToListing_WithParent_ShouldCallParentToListing()
+        {
+            // Arrange
+            var parentMock = new Mock<ILister>();
+            var codeProducer = new CodeProducer("TestAssembly");
+            codeProducer.Parent = parentMock.Object;
+
+            // Act
+            var result = codeProducer.ToListing();
+
+            // Assert
+            parentMock.Verify(p => p.AddIntoListing(It.IsAny<string>()), Times.Once);
+        }
+
+        [Fact]
+        public void CodeProducer_ToListing_WithoutParent_ShouldNotThrowException()
+        {
+            // Arrange
+            var codeProducer = new CodeProducer("TestAssembly");
+
+            // Act & Assert
+            Assert.Null(codeProducer.Parent); // Ensure Parent is null initially
+
+            // No exception should be thrown
+            var result = codeProducer.ToListing();
+        }
+
+        [Fact]
+        public void CodeProducer_DefineModule_ShouldCreateModuleProducerWithCorrectModuleBuilder()
+        {
+            // Arrange
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run);
+            var codeProducer = new CodeProducer(assemblyBuilder);
+            var moduleName = "TestModule";
+
+            // Act
+            var moduleProducer = codeProducer.DefineModule(moduleName);
+
+            // Assert
+            Assert.NotNull(moduleProducer);
+            Assert.Equal(moduleName, moduleProducer.GetModule().Name);
+        }
+
+        [Fact]
+        public void CodeProducer_ToAssembly_ShouldReturnAssemblyWithCorrectName()
+        {
+            // Arrange
+            var assemblyName = "TestAssembly";
+            var codeProducer = new CodeProducer(assemblyName);
+
+            // Act
+            var assembly = codeProducer.ToAssembly();
+
+            // Assert
+            Assert.NotNull(assembly);
+            Assert.Equal(assemblyName, assembly.GetName().Name);
+        }
+
+        [Fact]
+        public void CodeProducer_AddIntoListing_ShouldPropagateToParent()
+        {
+            // Arrange
+            var parentMock = new Mock<ILister>();
+            var codeProducer = new CodeProducer("TestAssembly");
+            codeProducer.Parent = parentMock.Object;
+            var content = "Some content";
+
+            // Act
+            codeProducer.AddIntoListing(content);
+
+            // Assert
+            parentMock.Verify(p => p.AddIntoListing(content), Times.Once);
+        }
+
+        [Fact]
+        public void CodeProducer_ToListing_ShouldReturnConcatenatedListing()
+        {
+            // Arrange
+            var codeProducer = new CodeProducer("TestAssembly");
+            var content1 = "Line 1";
+            var content2 = "Line 2";
+            codeProducer.AddIntoListing(content1);
+            codeProducer.AddIntoListing(content2);
+
+            // Act
+            var result = codeProducer.ToListing();
+
+            // Assert
+            Assert.Equal($"{content1}{Environment.NewLine}{content2}", result);
+        }
+    }
+}
